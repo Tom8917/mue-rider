@@ -1,9 +1,15 @@
 import Phaser from 'phaser'
+import { BIKERS } from '../data/bikers'
+import type { BikerConfig } from '../data/bikers'
+import { GAME_STATE } from '../data/gameState'
 
 export class GameScene extends Phaser.Scene {
     private background1!: Phaser.GameObjects.Image
     private background2!: Phaser.GameObjects.Image
 
+    private currentBiker: BikerConfig = BIKERS.portugal
+
+    private bikeSprite!: Phaser.GameObjects.Image
     private bike!: Phaser.GameObjects.Container
     private frontWheel!: Phaser.GameObjects.Image
     private rearWheel!: Phaser.GameObjects.Image
@@ -17,6 +23,7 @@ export class GameScene extends Phaser.Scene {
         hand: Phaser.Input.Keyboard.Key
         trick: Phaser.Input.Keyboard.Key
         restart: Phaser.Input.Keyboard.Key
+        menu: Phaser.Input.Keyboard.Key
     }
 
     private angle = 0
@@ -31,22 +38,29 @@ export class GameScene extends Phaser.Scene {
 
     private runTime = 0
 
+    private bestScore = 0
+
     constructor() {
         super('GameScene')
     }
 
     preload() {
         this.load.image('suburb', '/assets/backgrounds/suburb.png')
+        this.load.image('highway', '/assets/backgrounds/highway.png')
+        this.load.image('industrial', '/assets/backgrounds/industrial.png')
 
-        this.load.image('front_wheel', '/assets/portugal/front_wheel.png')
-        this.load.image('rear_wheel', '/assets/portugal/rear_wheel.png')
+        for (const biker of Object.values(BIKERS)) {
+            const folder = `/assets/bikers/${biker.folder}`
 
-        this.load.image('rider_normal', '/assets/portugal/rider_normal.png')
-        this.load.image('rider_hand_drag', '/assets/portugal/rider_hand_drag.png')
-        this.load.image('rider_knee_trick', '/assets/portugal/rider_knee_trick.png')
-
-        this.load.image('sparks_small', '/assets/portugal/sparks_small.png')
-        this.load.image('sparks_big', '/assets/portugal/sparks_big.png')
+            this.load.image(`${biker.key}_bike`, `${folder}/bike.png`)
+            this.load.image(`${biker.key}_normal`, `${folder}/rider_normal.png`)
+            this.load.image(`${biker.key}_hand`, `${folder}/rider_hand.png`)
+            this.load.image(`${biker.key}_knee`, `${folder}/rider_knee.png`)
+            this.load.image(`${biker.key}_front_wheel`, `${folder}/front_wheel.png`)
+            this.load.image(`${biker.key}_rear_wheel`, `${folder}/rear_wheel.png`)
+            this.load.image(`${biker.key}_sparks_small`, `${folder}/sparks_small.png`)
+            this.load.image(`${biker.key}_sparks_big`, `${folder}/sparks_big.png`)
+        }
     }
 
     create() {
@@ -59,18 +73,23 @@ export class GameScene extends Phaser.Scene {
 
         this.runTime = 0
 
+        this.bestScore = Number(localStorage.getItem('mue-rider-best-score') ?? 0)
+
         this.keys = this.input.keyboard!.addKeys({
             gas: Phaser.Input.Keyboard.KeyCodes.Z,
             brake: Phaser.Input.Keyboard.KeyCodes.S,
             hand: Phaser.Input.Keyboard.KeyCodes.A,
             trick: Phaser.Input.Keyboard.KeyCodes.E,
-            restart: Phaser.Input.Keyboard.KeyCodes.SPACE
+            restart: Phaser.Input.Keyboard.KeyCodes.SPACE,
+            menu: Phaser.Input.Keyboard.KeyCodes.ESC
         }) as any
+
+        this.currentBiker = BIKERS[GAME_STATE.biker]
 
         this.createBackground()
         this.createBike()
 
-        this.scoreText = this.add.text(20, 20, '', {
+        this.scoreText = this.add.text(20, 70, '', {
             fontSize: '24px',
             color: '#ffffff',
             stroke: '#000000',
@@ -92,6 +111,11 @@ export class GameScene extends Phaser.Scene {
 
         this.updateBackground(dt)
 
+        if (Phaser.Input.Keyboard.JustDown(this.keys.menu)) {
+            this.scene.start('MenuScene')
+            return
+        }
+
         if (this.isGameOver) {
             if (Phaser.Input.Keyboard.JustDown(this.keys.restart)) {
                 this.scene.restart()
@@ -105,11 +129,11 @@ export class GameScene extends Phaser.Scene {
         const trick = this.keys.trick.isDown
 
         if (gas) {
-            this.angularVelocity += 14 * dt
+            this.angularVelocity += this.currentBiker.physics.gasPower * dt
         }
 
         if (brake) {
-            this.angularVelocity -= 22 * dt
+            this.angularVelocity -= this.currentBiker.physics.brakePower * dt
         }
 
         const balanceDistance = this.angle - 90
@@ -117,17 +141,17 @@ export class GameScene extends Phaser.Scene {
         if (Math.abs(balanceDistance) < 4) {
             this.angularVelocity *= 0.94
         } else if (this.angle < 90) {
-            this.angularVelocity -= 4.5 * dt
+            this.angularVelocity -= this.currentBiker.physics.gravityDown * dt
         } else {
-            this.angularVelocity += 2.2 * dt
+            this.angularVelocity += this.currentBiker.physics.gravityBack * dt
         }
 
         this.angularVelocity *= 0.984
         this.angle += this.angularVelocity
 
-        this.angle = Phaser.Math.Clamp(this.angle, -5, 112)
-        const targetSpeed = 120 + this.runTime * 6
-        this.speed = Phaser.Math.Clamp(targetSpeed, 120, 520)
+        this.angle = Phaser.Math.Clamp(this.angle, 0, 112)
+        const targetSpeed = 120 + this.runTime * this.currentBiker.physics.acceleration
+        this.speed = Phaser.Math.Clamp(targetSpeed, 120, this.currentBiker.physics.maxSpeed)
 
         this.bike.setRotation(Phaser.Math.DegToRad(-this.angle))
 
@@ -139,7 +163,7 @@ export class GameScene extends Phaser.Scene {
         }
 
         const isScrapingMudguard = this.angle >= 86 && this.angle <= 94
-        const isHandTouching = hand && this.angle >= 10 && this.angle <= 100
+        const isHandTouching = hand && this.angle >= -10 && this.angle <= 100
         const isKneeTrick = trick && this.angle >= -10 && this.angle <= 96
 
         this.updateRiderPose(isHandTouching, isKneeTrick)
@@ -182,13 +206,13 @@ E = genou sur selle`
     }
 
     private createBackground() {
-        this.background1 = this.add.image(0, 0, 'suburb')
+        this.background1 = this.add.image(0, 0, GAME_STATE.background)
             .setOrigin(0, 0)
-            .setDisplaySize(1280, 720)
+            .setDisplaySize(1920, 1080)
 
-        this.background2 = this.add.image(1280, 0, 'suburb')
+        this.background2 = this.add.image(1920, 0, GAME_STATE.background)
             .setOrigin(0, 0)
-            .setDisplaySize(1280, 720)
+            .setDisplaySize(1920, 1080)
     }
 
     private updateBackground(dt: number) {
@@ -197,69 +221,121 @@ E = genou sur selle`
         this.background1.x -= scrollSpeed
         this.background2.x -= scrollSpeed
 
-        if (this.background1.x <= -1280) {
-            this.background1.x = this.background2.x + 1280
+        if (this.background1.x <= -1920) {
+            this.background1.x = this.background2.x + 1920
         }
 
-        if (this.background2.x <= -1280) {
-            this.background2.x = this.background1.x + 1280
+        if (this.background2.x <= -1920) {
+            this.background2.x = this.background1.x + 1920
         }
     }
 
     private createBike() {
-        this.bike = this.add.container(300, 630).setDepth(20)
+        const biker = this.currentBiker
 
-        // Image complète moto + biker sans roues
-        this.rider = this.add.image(105, -42, 'rider_normal')
+        this.bikeSprite = this.add.image(
+            biker.bike.x,
+            biker.bike.y,
+            `${biker.key}_bike`
+        )
             .setOrigin(0.5)
-            .setScale(0.50)
+            .setScale(biker.bike.scale)
 
-        // Roues dans les emplacements
-        this.rearWheel = this.add.image(28, -16, 'rear_wheel')
+        this.bike = this.add.container(
+            biker.container.x,
+            biker.container.y
+        ).setDepth(20)
+
+        this.rider = this.add.image(
+            biker.rider.normal.x,
+            biker.rider.normal.y,
+            `${biker.key}_normal`
+        )
             .setOrigin(0.5)
-            .setScale(0.31)
+            .setScale(biker.rider.normal.scale)
+            .setAngle(biker.rider.normal.angle)
 
-        this.frontWheel = this.add.image(151, -24, 'front_wheel')
+        this.rearWheel = this.add.image(
+            biker.rearWheel.x,
+            biker.rearWheel.y,
+            `${biker.key}_rear_wheel`
+        )
             .setOrigin(0.5)
-            .setScale(0.31)
+            .setScale(biker.rearWheel.scale)
 
-        this.sparksSmall = this.add.image(5, -80, 'sparks_small')
-            .setScale(0.20)
-            .setAngle(-270)
-            .setFlipX(true)
+        this.frontWheel = this.add.image(
+            biker.frontWheel.x,
+            biker.frontWheel.y,
+            `${biker.key}_front_wheel`
+        )
+            .setOrigin(0.5)
+            .setScale(biker.frontWheel.scale)
+
+        this.sparksSmall = this.add.image(
+            biker.sparks.small.x,
+            biker.sparks.small.y,
+            `${biker.key}_sparks_small`
+        )
+            .setScale(biker.sparks.small.scale)
+            .setAngle(biker.sparks.angle)
+            .setFlipX(biker.sparks.flipX)
             .setVisible(false)
 
-        this.sparksBig = this.add.image(12, -92, 'sparks_big')
-            .setScale(0.20)
-            .setAngle(-270)
-            .setFlipX(true)
+        this.sparksBig = this.add.image(
+            biker.sparks.big.x,
+            biker.sparks.big.y,
+            `${biker.key}_sparks_big`
+        )
+            .setScale(biker.sparks.big.scale)
+            .setAngle(biker.sparks.angle)
+            .setFlipX(biker.sparks.flipX)
             .setVisible(false)
 
-        this.bike.add(this.rider)
         this.bike.add(this.rearWheel)
         this.bike.add(this.frontWheel)
+
+        this.bike.add(this.bikeSprite)
+
+        this.bike.add(this.rider)
+
         this.bike.add(this.sparksSmall)
         this.bike.add(this.sparksBig)
     }
 
-    private updateRiderPose(isHandTouching: boolean, isKneeTrick: boolean) {
+    private updateRiderPose(
+        isHandTouching: boolean,
+        isKneeTrick: boolean
+    ) {
+        const biker = this.currentBiker
+
         if (isKneeTrick) {
-            this.rider.setTexture('rider_knee_trick')
-            this.rider.setPosition(85, -103)
-            this.rider.setScale(0.50)
+            const pose = biker.rider.knee
+
+            this.rider.setTexture(`${biker.key}_knee`)
+            this.rider.setPosition(pose.x, pose.y)
+            this.rider.setScale(pose.scale)
+            this.rider.setAngle(pose.angle)
+
             return
         }
 
         if (isHandTouching) {
-            this.rider.setTexture('rider_hand_drag')
-            this.rider.setPosition(80, -80)
-            this.rider.setScale(0.50)
+            const pose = biker.rider.hand
+
+            this.rider.setTexture(`${biker.key}_hand`)
+            this.rider.setPosition(pose.x, pose.y)
+            this.rider.setScale(pose.scale)
+            this.rider.setAngle(pose.angle)
+
             return
         }
 
-        this.rider.setTexture('rider_normal')
-        this.rider.setPosition(82, -82)
-        this.rider.setScale(0.50)
+        const pose = biker.rider.normal
+
+        this.rider.setTexture(`${biker.key}_normal`)
+        this.rider.setPosition(pose.x, pose.y)
+        this.rider.setScale(pose.scale)
+        this.rider.setAngle(pose.angle)
     }
 
     private getMutationLabel(): string {
@@ -272,12 +348,19 @@ E = genou sur selle`
         this.isGameOver = true
         this.angularVelocity = 0
 
+        if (this.score > this.bestScore) {
+            this.bestScore = this.score
+            localStorage.setItem('mue-rider-best-score', String(this.bestScore))
+        }
+
         this.gameOverText.setText(
             `${reason}
 
 Score : ${this.score}
+Best : ${this.bestScore}
 
-ESPACE pour recommencer`
+ESPACE pour recommencer
+ECHAP pour menu`
         )
     }
 }
