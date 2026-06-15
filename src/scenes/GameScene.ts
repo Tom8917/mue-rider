@@ -33,12 +33,20 @@ export class GameScene extends Phaser.Scene {
     private isGameOver = false
     private hasStartedWheelie = false
 
+    private runTime = 0
+    private bestScore = 0
+
+    private scrapeTime = 0
+    private scrapeCount = 0
+    private wasScraping = false
+
+    private mutationLevel = 1
+    private readonly mutationStep = 10000
+    private readonly maxMutationLevel = 5
+
     private scoreText!: Phaser.GameObjects.Text
     private gameOverText!: Phaser.GameObjects.Text
-
-    private runTime = 0
-
-    private bestScore = 0
+    private mutationText!: Phaser.GameObjects.Text
 
     constructor() {
         super('GameScene')
@@ -48,6 +56,8 @@ export class GameScene extends Phaser.Scene {
         this.load.image('suburb', '/assets/backgrounds/suburb.png')
         this.load.image('highway', '/assets/backgrounds/highway.png')
         this.load.image('industrial', '/assets/backgrounds/industrial.png')
+        this.load.image('los_angeles', '/assets/backgrounds/los_angeles.png')
+        this.load.image('ny', '/assets/backgrounds/ny.png')
 
         for (const biker of Object.values(BIKERS)) {
             const folder = `/assets/bikers/${biker.folder}`
@@ -64,16 +74,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     create() {
-        this.angle = 0
-        this.angularVelocity = 0
-        this.score = 0
-        this.speed = 120
-        this.isGameOver = false
-        this.hasStartedWheelie = false
-
-        this.runTime = 0
-
-        this.bestScore = Number(localStorage.getItem('mue-rider-best-score') ?? 0)
+        this.resetGameState()
 
         this.keys = this.input.keyboard!.addKeys({
             gas: Phaser.Input.Keyboard.KeyCodes.Z,
@@ -88,21 +89,7 @@ export class GameScene extends Phaser.Scene {
 
         this.createBackground()
         this.createBike()
-
-        this.scoreText = this.add.text(20, 70, '', {
-            fontSize: '24px',
-            color: '#ffffff',
-            stroke: '#000000',
-            strokeThickness: 4
-        }).setDepth(50)
-
-        this.gameOverText = this.add.text(640, 250, '', {
-            fontSize: '42px',
-            color: '#ff5555',
-            align: 'center',
-            stroke: '#000000',
-            strokeThickness: 5
-        }).setOrigin(0.5).setDepth(60)
+        this.createHud()
     }
 
     update(_: number, delta: number) {
@@ -123,17 +110,70 @@ export class GameScene extends Phaser.Scene {
             return
         }
 
+        this.updatePhysics(dt)
+        this.updateBikeVisual(dt)
+        this.updateGameplay(dt)
+        this.updateHud()
+    }
+
+    private resetGameState() {
+        this.angle = 0
+        this.angularVelocity = 0
+        this.score = 0
+        this.speed = 120
+        this.isGameOver = false
+        this.hasStartedWheelie = false
+
+        this.runTime = 0
+        this.bestScore = Number(localStorage.getItem('mue-rider-best-score') ?? 0)
+
+        this.scrapeTime = 0
+        this.scrapeCount = 0
+        this.wasScraping = false
+
+        this.mutationLevel = 1
+    }
+
+    private createHud() {
+        this.scoreText = this.add.text(20, 70, '', {
+            fontSize: '24px',
+            color: '#ffffff',
+            stroke: '#000000',
+            strokeThickness: 4
+        }).setDepth(50)
+
+        this.gameOverText = this.add.text(960, 330, '', {
+            fontSize: '52px',
+            color: '#ff5555',
+            align: 'center',
+            stroke: '#000000',
+            strokeThickness: 7
+        }).setOrigin(0.5).setDepth(60)
+
+        this.mutationText = this.add.text(960, 390, '', {
+            fontSize: '88px',
+            color: '#ffdd66',
+            fontStyle: 'bold',
+            stroke: '#000000',
+            strokeThickness: 10
+        })
+            .setOrigin(0.5)
+            .setDepth(999)
+            .setAlpha(0)
+    }
+
+    private updatePhysics(dt: number) {
         const gas = this.keys.gas.isDown
         const brake = this.keys.brake.isDown
-        const hand = this.keys.hand.isDown
-        const trick = this.keys.trick.isDown
+
+        const nerve = this.getMutationNerveMultiplier()
 
         if (gas) {
-            this.angularVelocity += this.currentBiker.physics.gasPower * dt
+            this.angularVelocity += this.currentBiker.physics.gasPower * nerve * dt
         }
 
         if (brake) {
-            this.angularVelocity -= this.currentBiker.physics.brakePower * dt
+            this.angularVelocity -= this.currentBiker.physics.brakePower * nerve * dt
         }
 
         const balanceDistance = this.angle - 90
@@ -141,22 +181,42 @@ export class GameScene extends Phaser.Scene {
         if (Math.abs(balanceDistance) < 4) {
             this.angularVelocity *= 0.94
         } else if (this.angle < 90) {
-            this.angularVelocity -= this.currentBiker.physics.gravityDown * dt
+            this.angularVelocity -= this.currentBiker.physics.gravityDown * nerve * dt
         } else {
-            this.angularVelocity += this.currentBiker.physics.gravityBack * dt
+            this.angularVelocity += this.currentBiker.physics.gravityBack * nerve * dt
         }
 
-        this.angularVelocity *= 0.984
+        const friction = Phaser.Math.Clamp(0.984 + (this.mutationLevel - 1) * 0.002, 0.984, 0.992)
+
+        this.angularVelocity *= friction
         this.angle += this.angularVelocity
 
         this.angle = Phaser.Math.Clamp(this.angle, 0, 112)
-        const targetSpeed = 120 + this.runTime * this.currentBiker.physics.acceleration
-        this.speed = Phaser.Math.Clamp(targetSpeed, 120, this.currentBiker.physics.maxSpeed)
 
+        const speedMutationBonus = 1 + (this.mutationLevel - 1) * 0.14
+        const targetSpeed =
+            120 +
+            this.runTime *
+            this.currentBiker.physics.acceleration *
+            speedMutationBonus
+
+        this.speed = Phaser.Math.Clamp(
+            targetSpeed,
+            120,
+            this.currentBiker.physics.maxSpeed * speedMutationBonus
+        )
+    }
+
+    private updateBikeVisual(dt: number) {
         this.bike.setRotation(Phaser.Math.DegToRad(-this.angle))
 
         this.frontWheel.rotation += this.speed * dt * 0.055
         this.rearWheel.rotation += this.speed * dt * 0.055
+    }
+
+    private updateGameplay(dt: number) {
+        const hand = this.keys.hand.isDown
+        const trick = this.keys.trick.isDown
 
         if (this.angle > 8) {
             this.hasStartedWheelie = true
@@ -166,42 +226,146 @@ export class GameScene extends Phaser.Scene {
         const isHandTouching = hand && this.angle >= -10 && this.angle <= 100
         const isKneeTrick = trick && this.angle >= -10 && this.angle <= 96
 
+        this.updateScrapeStats(isScrapingMudguard, dt)
         this.updateRiderPose(isHandTouching, isKneeTrick)
 
         this.sparksSmall.setVisible(isScrapingMudguard)
         this.sparksBig.setVisible(isScrapingMudguard && this.angle >= 89 && this.angle <= 92)
 
-        if (this.hasStartedWheelie) {
-            if (this.angle <= 0) {
-                this.gameOver('Roue avant reposée')
-            }
-
-            if (this.angle >= 106) {
-                this.gameOver('Chute arrière')
-            }
-
-            let multiplier = 1
-
-            if (this.angle >= 45) multiplier = 2
-            if (isKneeTrick) multiplier = 3
-            if (isHandTouching) multiplier = 4
-            if (isScrapingMudguard) multiplier = 5
-
-            this.score += Math.floor(
-                this.angle * (this.speed / 100) * multiplier * dt
-            )
+        if (!this.hasStartedWheelie) {
+            return
         }
+
+        if (this.angle <= 0) {
+            this.gameOver('Roue avant reposée')
+            return
+        }
+
+        if (this.angle >= 106) {
+            this.gameOver('Chute arrière')
+            return
+        }
+
+        let multiplier = 1
+
+        if (this.angle >= 45) multiplier = 2
+        if (isKneeTrick) multiplier = 3
+        if (isHandTouching) multiplier = 4
+        if (isScrapingMudguard) multiplier = 5
+
+        multiplier *= this.getMutationScoreMultiplier()
+
+        this.score += Math.floor(
+            this.angle *
+            (this.speed / 100) *
+            multiplier *
+            dt
+        )
+
+        this.checkMutation()
+    }
+
+    private updateScrapeStats(isScrapingMudguard: boolean, dt: number) {
+        if (isScrapingMudguard) {
+            this.scrapeTime += dt
+
+            if (!this.wasScraping) {
+                this.scrapeCount++
+                this.wasScraping = true
+            }
+
+            return
+        }
+
+        this.wasScraping = false
+    }
+
+    private checkMutation() {
+        const newMutationLevel = this.getMutationLevel()
+
+        if (newMutationLevel > this.mutationLevel) {
+            this.mutationLevel = newMutationLevel
+            this.triggerMutation(this.mutationLevel)
+        }
+    }
+
+    private getMutationLevel(): number {
+        const level = Math.floor(this.score / this.mutationStep) + 1
+
+        return Phaser.Math.Clamp(level, 1, this.maxMutationLevel)
+    }
+
+    private getMutationLabel(): string {
+        if (this.mutationLevel >= this.maxMutationLevel) {
+            return `Niveau ${this.mutationLevel} MAX`
+        }
+
+        return `Niveau ${this.mutationLevel}`
+    }
+
+    private getMutationNerveMultiplier(): number {
+        return 1 + (this.mutationLevel - 1) * 0.22
+    }
+
+    private getMutationScoreMultiplier(): number {
+        return 1 + (this.mutationLevel - 1) * 0.12
+    }
+
+    private triggerMutation(level: number) {
+        this.cameras.main.shake(380, 0.013)
+        this.cameras.main.flash(300, 255, 220, 80)
+
+        this.mutationText
+            .setText(level >= this.maxMutationLevel ? 'MUE MAXIMALE' : `MUE NIVEAU ${level}`)
+            .setScale(0.45)
+            .setAlpha(1)
+            .setY(430)
+
+        this.tweens.killTweensOf(this.mutationText)
+
+        this.tweens.add({
+            targets: this.mutationText,
+            scale: 1.2,
+            y: 350,
+            alpha: 0,
+            duration: 2000,
+            ease: 'Back.Out'
+        })
+
+        this.tweens.add({
+            targets: this.bike,
+            scaleX: 1.08,
+            scaleY: 1.08,
+            duration: 150,
+            yoyo: true,
+            ease: 'Quad.easeOut'
+        })
+    }
+
+    private updateHud() {
+        const nextMutationScore =
+            this.mutationLevel >= this.maxMutationLevel
+                ? 'MAX'
+                : this.mutationLevel * this.mutationStep
 
         this.scoreText.setText(
             `Score : ${this.score}
+Best : ${this.bestScore}
+
 Angle : ${Math.floor(this.angle)}°
 Vitesse : ${Math.floor(this.speed)}
-Mue : ${this.getMutationLabel()}
 
-Z = gaz / lever
-S = frein arrière
+Bavette : ${this.scrapeCount}x
+Frottement : ${this.scrapeTime.toFixed(1)}s
+
+Mue : ${this.getMutationLabel()}
+Prochaine mue : ${nextMutationScore}
+
+Z = gaz
+S = frein
 A = main arrière
-E = genou sur selle`
+E = genou selle
+ESC = menu`
         )
     }
 
@@ -293,55 +457,38 @@ E = genou sur selle`
 
         this.bike.add(this.rearWheel)
         this.bike.add(this.frontWheel)
-
         this.bike.add(this.bikeSprite)
-
         this.bike.add(this.rider)
-
         this.bike.add(this.sparksSmall)
         this.bike.add(this.sparksBig)
     }
 
-    private updateRiderPose(
-        isHandTouching: boolean,
-        isKneeTrick: boolean
-    ) {
+    private updateRiderPose(isHandTouching: boolean, isKneeTrick: boolean) {
         const biker = this.currentBiker
 
         if (isKneeTrick) {
             const pose = biker.rider.knee
-
             this.rider.setTexture(`${biker.key}_knee`)
             this.rider.setPosition(pose.x, pose.y)
             this.rider.setScale(pose.scale)
             this.rider.setAngle(pose.angle)
-
             return
         }
 
         if (isHandTouching) {
             const pose = biker.rider.hand
-
             this.rider.setTexture(`${biker.key}_hand`)
             this.rider.setPosition(pose.x, pose.y)
             this.rider.setScale(pose.scale)
             this.rider.setAngle(pose.angle)
-
             return
         }
 
         const pose = biker.rider.normal
-
         this.rider.setTexture(`${biker.key}_normal`)
         this.rider.setPosition(pose.x, pose.y)
         this.rider.setScale(pose.scale)
         this.rider.setAngle(pose.angle)
-    }
-
-    private getMutationLabel(): string {
-        if (this.score >= 2000) return 'Niveau 3'
-        if (this.score >= 800) return 'Niveau 2'
-        return 'Niveau 1'
     }
 
     private gameOver(reason: string) {

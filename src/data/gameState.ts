@@ -1,8 +1,14 @@
 import type { BikerKey } from './bikers'
 
-export type BackgroundKey = 'suburb' | 'highway' | 'industrial'
+export type BackgroundKey =
+    | 'suburb'
+    | 'highway'
+    | 'industrial'
+    | 'los_angeles'
+    | 'ny'
+    | 'parking'
 
 export const GAME_STATE = {
-    biker: 'portugal' as BikerKey,
+    biker: 'portugal' as const,
     background: 'suburb' as BackgroundKey,
 }
