@@ -7,7 +7,7 @@ const config: Phaser.Types.Core.GameConfig = {
     type: Phaser.AUTO,
 
     scale: {
-        mode: Phaser.Scale.ENVELOP,
+        mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH,
         width: 1920,
         height: 1080
@@ -31,5 +31,52 @@ const config: Phaser.Types.Core.GameConfig = {
         GameScene
     ]
 }
+
+window.addEventListener('DOMContentLoaded', () => {
+    const controls = document.querySelector('#mobile-controls')
+
+    if (!controls) return
+
+    const send = (action: string, down: boolean) => {
+        window.dispatchEvent(new CustomEvent('mobile-input', {
+            detail: { action, down }
+        }))
+    }
+
+    controls.addEventListener('pointerdown', (event) => {
+        const target = event.target as HTMLElement
+        const button = target.closest('button') as HTMLButtonElement | null
+
+        event.preventDefault()
+
+        if (button?.dataset.action) {
+            send(button.dataset.action, true)
+            return
+        }
+
+        send('gas', true)
+    })
+
+    controls.addEventListener('pointerup', (event) => {
+        const target = event.target as HTMLElement
+        const button = target.closest('button') as HTMLButtonElement | null
+
+        event.preventDefault()
+
+        if (button?.dataset.action) {
+            send(button.dataset.action, false)
+            return
+        }
+
+        send('gas', false)
+    })
+
+    controls.addEventListener('pointercancel', () => {
+        send('gas', false)
+        send('brake', false)
+        send('hand', false)
+        send('trick', false)
+    })
+})
 
 new Phaser.Game(config)
