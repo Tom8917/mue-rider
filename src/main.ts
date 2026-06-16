@@ -3,14 +3,16 @@ import { MenuScene } from './scenes/MenuScene'
 import { GameScene } from './scenes/GameScene'
 import './styles/game.css'
 
+const isPortrait = window.innerHeight > window.innerWidth
+
 const config: Phaser.Types.Core.GameConfig = {
     type: Phaser.AUTO,
 
     scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH,
-        width: 1920,
-        height: 1080
+        width: isPortrait ? 1080 : 1920,
+        height: isPortrait ? 1920 : 1080
     },
 
     backgroundColor: '#1a1a1a',

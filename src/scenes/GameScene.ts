@@ -122,6 +122,8 @@ export class GameScene extends Phaser.Scene {
     }
 
     create() {
+        document.body.classList.add('game-active')
+
         this.sound.stopByKey('menu_music')
         this.sound.stopByKey('game_music')
 
@@ -240,6 +242,7 @@ export class GameScene extends Phaser.Scene {
             this.scrapeSound?.stop()
             this.gameMusic?.stop()
 
+            document.body.classList.remove('game-active')
             this.scene.start('MenuScene')
             return
         }
