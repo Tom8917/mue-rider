@@ -99,7 +99,7 @@ export const BIKERS: Record<BikerKey, BikerConfig> = {
 
     brazil: {
         key: 'brazil',
-        label: 'Brésil - Triumph 400',
+        label: 'Brésil - Honda CBR650',
         folder: 'brazil',
 
         container: { x: 300 + RIDER_X_OFFSET, y: 920 },
