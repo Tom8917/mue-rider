@@ -31,6 +31,20 @@ export class MenuScene extends Phaser.Scene {
     }
 
     preload() {
+        const mobile = window.innerHeight > window.innerWidth
+
+        const loadingText = this.add.text(
+            mobile ? 360 : 960,
+            mobile ? 640 : 540,
+            'Chargement...',
+            {
+                fontSize: mobile ? '36px' : '42px',
+                color: '#ffffff',
+                stroke: '#000000',
+                strokeThickness: 6
+            }
+        ).setOrigin(0.5)
+
         this.load.image('suburb', '/assets/backgrounds/suburb.png')
         this.load.image('highway', '/assets/backgrounds/highway.png')
         this.load.image('industrial', '/assets/backgrounds/industrial.png')
@@ -220,6 +234,12 @@ export class MenuScene extends Phaser.Scene {
 
         if (this.scale.gameSize.height > this.scale.gameSize.width) {
             this.setupMobileMenu()
+
+            this.time.delayedCall(100, () => {
+                this.scale.refresh()
+                this.setupMobileMenu()
+                this.refreshMenu()
+            })
         }
     }
 
