@@ -1,7 +1,7 @@
 import Phaser from 'phaser'
-import { BIKERS } from '../data/bikers'
-import type { BikerConfig } from '../data/bikers'
-import { GAME_STATE } from '../data/gameState'
+import {BIKERS} from '../data/bikers'
+import type {BikerConfig} from '../data/bikers'
+import {GAME_STATE} from '../data/gameState'
 
 export class GameScene extends Phaser.Scene {
     private background1!: Phaser.GameObjects.Image
@@ -17,6 +17,12 @@ export class GameScene extends Phaser.Scene {
     private sparksSmall!: Phaser.GameObjects.Image
     private sparksBig!: Phaser.GameObjects.Image
 
+    private isMutating = false
+    private mutationVisualUntil = 0
+
+    private frontWheelSpinSpeed = 0
+    private hudCamera!: Phaser.Cameras.Scene2D.Camera
+
     private keys!: {
         gas: Phaser.Input.Keyboard.Key
         brake: Phaser.Input.Keyboard.Key
@@ -29,9 +35,11 @@ export class GameScene extends Phaser.Scene {
     private angle = 0
     private angularVelocity = 0
     private score = 0
-    private speed = 120
+    private speed = 100
     private isGameOver = false
     private hasStartedWheelie = false
+
+    private riderIdleOffset = 0
 
     private crashReason: 'front' | 'back' | null = null
 
@@ -41,6 +49,10 @@ export class GameScene extends Phaser.Scene {
     private scrapeTime = 0
     private scrapeCount = 0
     private wasScraping = false
+
+    private combo = 1
+    private comboTimer = 0
+    private readonly comboMax = 4
 
     private mutationLevel = 1
     private readonly mutationStep = 10000
@@ -65,6 +77,8 @@ export class GameScene extends Phaser.Scene {
         this.load.image('industrial', '/assets/backgrounds/industrial.png')
         this.load.image('los_angeles', '/assets/backgrounds/los_angeles.png')
         this.load.image('ny', '/assets/backgrounds/ny.png')
+        this.load.image('las_vegas', '/assets/backgrounds/las_vegas.png')
+        this.load.image('miami', '/assets/backgrounds/miami.png')
 
         for (const biker of Object.values(BIKERS)) {
             const folder = `/assets/bikers/${biker.folder}`
@@ -116,6 +130,22 @@ export class GameScene extends Phaser.Scene {
         this.createBike()
         this.createHud()
 
+        this.hudCamera = this.cameras.add(0, 0, this.scale.width, this.scale.height)
+        this.hudCamera.setScroll(0, 0)
+        this.hudCamera.setZoom(1)
+
+        this.cameras.main.ignore([
+            this.scoreText,
+            this.gameOverText,
+            this.mutationText,
+        ])
+
+        this.hudCamera.ignore([
+            this.background1,
+            this.background2,
+            this.bike,
+        ])
+
         if (GAME_STATE.gameSoundEnabled) {
             this.gameMusic = this.sound.add('game_music', {
                 loop: true,
@@ -131,11 +161,46 @@ export class GameScene extends Phaser.Scene {
         }
     }
 
+    private updateCameraEffects() {
+        const camera = this.cameras.main
+
+        let targetZoom = 1
+
+        // zone moyenne dangereuse
+        if (this.angle >= 60) {
+            targetZoom = 1.02
+        }
+
+        // bavette
+        if (this.angle >= 84 && this.angle <= 96) {
+            targetZoom = 1.05
+
+            // micro shake bavette
+            if (Math.random() < 0.08) {
+                camera.shake(60, 0.0015)
+            }
+        }
+
+        // ultra dangereux proche chute arrière
+        if (this.angle >= 105) {
+            targetZoom = 1.08
+
+            if (Math.random() < 0.18) {
+                camera.shake(80, 0.00)
+            }
+        }
+
+        // transition smooth
+        camera.zoom += (targetZoom - camera.zoom) * 0.08
+    }
+
     update(_: number, delta: number) {
         const dt = delta / 1000
         this.runTime += dt
 
         this.updateBackground(dt)
+
+        this.updateCameraEffects()
 
         if (Phaser.Input.Keyboard.JustDown(this.keys.menu)) {
             this.scrapeSound?.stop()
@@ -154,6 +219,7 @@ export class GameScene extends Phaser.Scene {
 
         this.updatePhysics(dt)
         this.updateBikeVisual(dt)
+        this.riderIdleOffset = Math.sin(this.time.now * 0.008) * 1
         this.updateGameplay(dt)
         this.updateHud()
     }
@@ -173,16 +239,23 @@ export class GameScene extends Phaser.Scene {
         this.scrapeCount = 0
         this.wasScraping = false
 
+        this.combo = 1
+        this.comboTimer = 0
+
         this.mutationLevel = 1
     }
 
     private createHud() {
-        this.scoreText = this.add.text(20, 70, '', {
-            fontSize: '24px',
+        this.scoreText = this.add.text(25, 75, '', {
+            fontSize: '22px',
             color: '#ffffff',
+            fontStyle: 'bold',
+            fontFamily: 'Arial',
+            backgroundColor: 'rgba(0, 0, 0, 0.45)',
+            padding: {x: 18, y: 14},
             stroke: '#000000',
-            strokeThickness: 4
-        }).setDepth(50)
+            strokeThickness: 3
+        }).setDepth(999)
 
         this.gameOverText = this.add.text(960, 330, '', {
             fontSize: '52px',
@@ -238,6 +311,7 @@ export class GameScene extends Phaser.Scene {
         this.angle = Phaser.Math.Clamp(this.angle, 0, 112)
 
         const speedMutationBonus = 1 + (this.mutationLevel - 1) * 0.14
+
         const targetSpeed =
             120 +
             this.runTime *
@@ -254,8 +328,20 @@ export class GameScene extends Phaser.Scene {
     private updateBikeVisual(dt: number) {
         this.bike.setRotation(Phaser.Math.DegToRad(-this.angle))
 
-        this.frontWheel.rotation += this.speed * dt * 0.055
         this.rearWheel.rotation += this.speed * dt * 0.055
+
+        const frontWheelInAir = this.hasStartedWheelie || this.angle > 8
+
+        if (!frontWheelInAir) {
+            this.frontWheelSpinSpeed = this.speed
+        } else {
+            this.frontWheelSpinSpeed = Math.max(
+                0,
+                this.frontWheelSpinSpeed - (this.currentBiker.physics.maxSpeed / 5) * dt
+            )
+        }
+
+        this.frontWheel.rotation += this.frontWheelSpinSpeed * dt * 0.055
     }
 
     private updateGameplay(dt: number) {
@@ -298,6 +384,25 @@ export class GameScene extends Phaser.Scene {
         const isHandTrickBonus = isHandTouching && this.angle >= 55
         const isKneeTrickBonus = isKneeTrick
 
+        const isComboAction =
+            isScrapingMudguard ||
+            isHandTrickBonus ||
+            isKneeTrickBonus ||
+            isHighAngleZone ||
+            isLowDangerZone
+
+        if (isComboAction) {
+            this.comboTimer += dt
+
+            if (this.comboTimer >= 0.6) {
+                this.combo = Phaser.Math.Clamp(this.combo + 0.2, 1, this.comboMax)
+                this.comboTimer = 0
+            }
+        } else {
+            this.comboTimer = 0
+            this.combo = Math.max(1, this.combo - 1.5 * dt)
+        }
+
         let multiplier = 1
 
         if (isLowDangerZone) multiplier = 2
@@ -307,12 +412,13 @@ export class GameScene extends Phaser.Scene {
         if (isScrapingMudguard) multiplier = Math.max(multiplier, 5)
 
         multiplier *= this.getMutationScoreMultiplier()
+        multiplier *= this.combo
 
         const scoreAngle = Math.max(this.angle, 20)
 
         this.score +=
             scoreAngle *
-            (this.speed / 100) *
+            (this.speed / 180) *
             multiplier *
             dt
 
@@ -438,6 +544,25 @@ export class GameScene extends Phaser.Scene {
             yoyo: true,
             ease: 'Quad.easeOut'
         })
+
+        this.isMutating = true
+        this.mutationVisualUntil = this.time.now + 700
+
+        this.rider.setTint(0xffdd55)
+
+        this.tweens.add({
+            targets: this.rider,
+            scaleX: '+=0.08',
+            scaleY: '+=0.08',
+            duration: 120,
+            yoyo: true,
+            repeat: 3,
+            ease: 'Back.easeOut',
+            onComplete: () => {
+                this.rider.clearTint()
+                this.isMutating = false
+            }
+        })
     }
 
     private updateHud() {
@@ -447,24 +572,20 @@ export class GameScene extends Phaser.Scene {
                 : this.mutationLevel * this.mutationStep
 
         this.scoreText.setText(
-            `Score : ${Math.floor(this.score)} 
-Best : ${Math.floor(this.bestScore)}
+            `🏁 SCORE  ${Math.floor(this.score)}
+⭐ BEST   ${Math.floor(this.bestScore)}
 
-Angle : ${Math.floor(this.angle)}°
-Zone : ${this.getDangerLabel()}
-Vitesse : ${Math.floor(this.speed)}
+⚡ COMBO  x${this.combo.toFixed(1)}
+🧬 MUE    ${this.getMutationLabel()}
+🎯 PROCHAIN PALIER   ${nextMutationScore}
 
-Bavette : ${this.scrapeCount}x
-Frottement : ${this.scrapeTime.toFixed(1)}s
+📐 ANGLE  ${Math.floor(this.angle)}°
+🔥 ZONE   ${this.getDangerLabel()}
 
-Mue : ${this.getMutationLabel()}
-Prochaine mue : ${nextMutationScore}
+✨ BAVETTE ${this.scrapeCount}x
+⏱ FROTTE  ${this.scrapeTime.toFixed(1)}s
 
-Z = gaz
-S = frein
-A = main arrière
-E = genou selle
-ESC = menu`
+Z Gaz | S Frein | A Main | E Genou`
         )
     }
 
@@ -600,8 +721,10 @@ ESC = menu`
         if (isKneeTrick) {
             const pose = poses.knee
             this.rider.setTexture(`${biker.key}_knee${suffix}`)
-            this.rider.setPosition(pose.x, pose.y)
-            this.rider.setScale(pose.scale)
+            this.rider.setPosition(pose.x, pose.y + this.riderIdleOffset)
+            if (!this.isMutating) {
+                this.rider.setScale(pose.scale)
+            }
             this.rider.setAngle(pose.angle)
             return
         }
@@ -609,16 +732,20 @@ ESC = menu`
         if (isHandTouching) {
             const pose = poses.hand
             this.rider.setTexture(`${biker.key}_hand${suffix}`)
-            this.rider.setPosition(pose.x, pose.y)
-            this.rider.setScale(pose.scale)
+            this.rider.setPosition(pose.x, pose.y + this.riderIdleOffset)
+            if (!this.isMutating) {
+                this.rider.setScale(pose.scale)
+            }
             this.rider.setAngle(pose.angle)
             return
         }
 
         const pose = poses.normal
         this.rider.setTexture(`${biker.key}_normal${suffix}`)
-        this.rider.setPosition(pose.x, pose.y)
-        this.rider.setScale(pose.scale)
+        this.rider.setPosition(pose.x, pose.y + this.riderIdleOffset)
+        if (!this.isMutating) {
+            this.rider.setScale(pose.scale)
+        }
         this.rider.setAngle(pose.angle)
         this.rider.setFlipX(pose.flipX ?? false)
         this.rider.setFlipY(pose.flipY ?? false)
