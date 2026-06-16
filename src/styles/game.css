@@ -30,43 +30,47 @@ canvas {
     #mobile-controls button {
         position: absolute;
         pointer-events: auto;
-        border: 2px solid rgba(255,255,255,.7);
-        background: rgba(0,0,0,.45);
+        border: 2px solid rgba(255,255,255,.75);
+        background: rgba(0,0,0,.50);
         color: white;
-        font-weight: 800;
+        font-weight: 900;
         border-radius: 18px;
-        padding: 16px 18px;
-        font-size: 17px;
+        font-size: 16px;
+        backdrop-filter: blur(4px);
     }
 
     [data-action="brake"] {
-        right: 24px;
-        bottom: 34px;
+        right: 18px;
+        bottom: 24px;
         width: 125px;
-        height: 75px;
+        height: 78px;
     }
 
     [data-action="hand"] {
-        left: 24px;
-        bottom: 34px;
-        width: 115px;
+        left: 18px;
+        bottom: 24px;
+        width: 110px;
         height: 70px;
     }
 
     [data-action="trick"] {
-        left: 150px;
-        bottom: 34px;
-        width: 115px;
+        left: 138px;
+        bottom: 24px;
+        width: 110px;
         height: 70px;
     }
 
     [data-action="restart"] {
-        right: 24px;
-        top: 24px;
+        right: 18px;
+        top: 18px;
+        width: 58px;
+        height: 48px;
     }
 
     [data-action="menu"] {
-        left: 24px;
-        top: 24px;
+        left: 18px;
+        top: 18px;
+        width: 80px;
+        height: 48px;
     }
 }

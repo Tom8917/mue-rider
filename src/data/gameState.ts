@@ -6,10 +6,11 @@ export type BackgroundKey =
     | 'industrial'
     | 'los_angeles'
     | 'ny'
-    | 'parking'
+    | 'las_vegas'
+    | 'miami'
 
 export const GAME_STATE = {
-    biker: 'portugal' as const,
+    biker: 'portugal' as BikerKey,
     background: 'suburb' as BackgroundKey,
     menuSoundEnabled: true,
     gameSoundEnabled: true,

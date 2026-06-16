@@ -58,17 +58,14 @@ window.addEventListener('DOMContentLoaded', () => {
     })
 
     controls.addEventListener('pointerup', (event) => {
-        const target = event.target as HTMLElement
-        const button = target.closest('button') as HTMLButtonElement | null
-
         event.preventDefault()
 
-        if (button?.dataset.action) {
-            send(button.dataset.action, false)
-            return
-        }
-
         send('gas', false)
+        send('brake', false)
+        send('hand', false)
+        send('trick', false)
+        send('restart', false)
+        send('menu', false)
     })
 
     controls.addEventListener('pointercancel', () => {
