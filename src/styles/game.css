@@ -6,8 +6,67 @@ body,
     height: 100%;
     overflow: hidden;
     background: #111;
+    touch-action: none;
 }
 
 canvas {
     display: block;
+}
+
+#mobile-controls {
+    display: none;
+}
+
+@media (max-width: 900px), (pointer: coarse) {
+    #mobile-controls {
+        display: block;
+        position: fixed;
+        inset: 0;
+        z-index: 20;
+        pointer-events: auto;
+        touch-action: none;
+    }
+
+    #mobile-controls button {
+        position: absolute;
+        pointer-events: auto;
+        border: 2px solid rgba(255,255,255,.7);
+        background: rgba(0,0,0,.45);
+        color: white;
+        font-weight: 800;
+        border-radius: 18px;
+        padding: 16px 18px;
+        font-size: 17px;
+    }
+
+    [data-action="brake"] {
+        right: 24px;
+        bottom: 34px;
+        width: 125px;
+        height: 75px;
+    }
+
+    [data-action="hand"] {
+        left: 24px;
+        bottom: 34px;
+        width: 115px;
+        height: 70px;
+    }
+
+    [data-action="trick"] {
+        left: 150px;
+        bottom: 34px;
+        width: 115px;
+        height: 70px;
+    }
+
+    [data-action="restart"] {
+        right: 24px;
+        top: 24px;
+    }
+
+    [data-action="menu"] {
+        left: 24px;
+        top: 24px;
+    }
 }

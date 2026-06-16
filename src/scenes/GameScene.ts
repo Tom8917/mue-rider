@@ -62,6 +62,14 @@ export class GameScene extends Phaser.Scene {
     private gameOverText!: Phaser.GameObjects.Text
     private mutationText!: Phaser.GameObjects.Text
 
+    private mobile = {
+        gas: false,
+        brake: false,
+        hand: false,
+        trick: false,
+        restart: false,
+        menu: false,
+    }
 
     private gameMusic?: Phaser.Sound.BaseSound
     private scrapeSound?: Phaser.Sound.BaseSound
@@ -123,6 +131,12 @@ export class GameScene extends Phaser.Scene {
             menu: Phaser.Input.Keyboard.KeyCodes.ESC
         }) as any
 
+        window.addEventListener('mobile-input', this.handleMobileInput as EventListener)
+
+        this.events.once('shutdown', () => {
+            window.removeEventListener('mobile-input', this.handleMobileInput as EventListener)
+        })
+
         this.currentBiker = BIKERS[GAME_STATE.biker]
         this.crashReason = null
 
@@ -158,6 +172,19 @@ export class GameScene extends Phaser.Scene {
                 loop: true,
                 volume: 1.5
             })
+        }
+    }
+
+    private handleMobileInput = (event: Event) => {
+        const customEvent = event as CustomEvent<{
+            action: keyof GameScene['mobile']
+            down: boolean
+        }>
+
+        const { action, down } = customEvent.detail
+
+        if (action in this.mobile) {
+            this.mobile[action] = down
         }
     }
 
@@ -202,7 +229,8 @@ export class GameScene extends Phaser.Scene {
 
         this.updateCameraEffects()
 
-        if (Phaser.Input.Keyboard.JustDown(this.keys.menu)) {
+        if (Phaser.Input.Keyboard.JustDown(this.keys.menu) || this.mobile.menu) {
+            this.mobile.menu = false
             this.scrapeSound?.stop()
             this.gameMusic?.stop()
 
@@ -211,7 +239,8 @@ export class GameScene extends Phaser.Scene {
         }
 
         if (this.isGameOver) {
-            if (Phaser.Input.Keyboard.JustDown(this.keys.restart)) {
+            if (Phaser.Input.Keyboard.JustDown(this.keys.restart) || this.mobile.restart) {
+                this.mobile.restart = false
                 this.scene.restart()
             }
             return
@@ -278,8 +307,8 @@ export class GameScene extends Phaser.Scene {
     }
 
     private updatePhysics(dt: number) {
-        const gas = this.keys.gas.isDown
-        const brake = this.keys.brake.isDown
+        const gas = this.keys.gas.isDown || this.mobile.gas
+        const brake = this.keys.brake.isDown || this.mobile.brake
 
         const nerve = this.getMutationNerveMultiplier()
 
@@ -345,8 +374,8 @@ export class GameScene extends Phaser.Scene {
     }
 
     private updateGameplay(dt: number) {
-        const hand = this.keys.hand.isDown
-        const trick = this.keys.trick.isDown
+        const hand = this.keys.hand.isDown || this.mobile.hand
+        const trick = this.keys.trick.isDown || this.mobile.trick
 
         if (this.angle > 20) {
             this.hasStartedWheelie = true
