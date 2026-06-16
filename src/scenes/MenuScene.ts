@@ -227,29 +227,29 @@ export class MenuScene extends Phaser.Scene {
 
         const best = Number(localStorage.getItem('mue-rider-best-score') ?? 0)
 
-        this.add.text(540, 120, 'MUE RIDER', {
+        this.add.text(360, 120, 'MUE RIDER', {
             fontSize: '76px',
             color: '#ffffff',
             stroke: '#000000',
             strokeThickness: 8
         }).setOrigin(0.5)
 
-        this.add.text(540, 205, `Best score : ${best}`, {
+        this.add.text(360, 205, `Best score : ${best}`, {
             fontSize: '34px',
             color: '#ffdd66',
             stroke: '#000000',
             strokeThickness: 5
         }).setOrigin(0.5)
 
-        this.backgroundPreview = this.add.image(540, 470, GAME_STATE.background)
+        this.backgroundPreview = this.add.image(360, 470, GAME_STATE.background)
             .setOrigin(0.5)
             .setAlpha(0.95)
 
-        this.bikerPreview = this.add.image(540, 610, `${GAME_STATE.biker}_menu_bike`)
+        this.bikerPreview = this.add.image(360, 610, `${GAME_STATE.biker}_menu_bike`)
             .setOrigin(0.69)
             .setScale(0.9)
 
-        this.bikerTitle = this.add.text(540, 820, '', {
+        this.bikerTitle = this.add.text(360, 820, '', {
             fontSize: '34px',
             color: '#ffffff',
             align: 'center',
@@ -257,7 +257,7 @@ export class MenuScene extends Phaser.Scene {
             strokeThickness: 5
         }).setOrigin(0.5)
 
-        this.backgroundTitle = this.add.text(540, 885, '', {
+        this.backgroundTitle = this.add.text(360, 885, '', {
             fontSize: '30px',
             color: '#cccccc',
             align: 'center',
@@ -265,30 +265,30 @@ export class MenuScene extends Phaser.Scene {
             strokeThickness: 5
         }).setOrigin(0.5)
 
-        this.menuSoundText = this.add.text(540, 0, '', { fontSize: '1px' })
-        this.gameSoundText = this.add.text(540, 0, '', { fontSize: '1px' })
+        this.menuSoundText = this.add.text(360, 0, '', { fontSize: '1px' })
+        this.gameSoundText = this.add.text(360, 0, '', { fontSize: '1px' })
 
-        this.addMobileButton(290, 1050, '← MOTO', () => {
+        this.addMobileButton(180, 1050, '← MOTO', () => {
             this.bikerIndex = Phaser.Math.Wrap(this.bikerIndex - 1, 0, this.bikers.length)
             this.refreshMenu()
         })
 
-        this.addMobileButton(790, 1050, 'MOTO →', () => {
+        this.addMobileButton(540, 1050, 'MOTO →', () => {
             this.bikerIndex = Phaser.Math.Wrap(this.bikerIndex + 1, 0, this.bikers.length)
             this.refreshMenu()
         })
 
-        this.addMobileButton(290, 1160, '← DÉCOR', () => {
+        this.addMobileButton(180, 1160, '← DÉCOR', () => {
             this.backgroundIndex = Phaser.Math.Wrap(this.backgroundIndex - 1, 0, this.backgrounds.length)
             this.refreshMenu()
         })
 
-        this.addMobileButton(790, 1160, 'DÉCOR →', () => {
+        this.addMobileButton(540, 1160, 'DÉCOR →', () => {
             this.backgroundIndex = Phaser.Math.Wrap(this.backgroundIndex + 1, 0, this.backgrounds.length)
             this.refreshMenu()
         })
 
-        this.addMobileButton(290, 1280, 'SON MENU', () => {
+        this.addMobileButton(180, 1280, 'SON MENU', () => {
             GAME_STATE.menuSoundEnabled = !GAME_STATE.menuSoundEnabled
 
             if (GAME_STATE.menuSoundEnabled) {
@@ -305,12 +305,12 @@ export class MenuScene extends Phaser.Scene {
             this.refreshMenu()
         })
 
-        this.addMobileButton(790, 1280, 'SON JEU', () => {
+        this.addMobileButton(540, 1280, 'SON JEU', () => {
             GAME_STATE.gameSoundEnabled = !GAME_STATE.gameSoundEnabled
             this.refreshMenu()
         })
 
-        this.addMobileButton(540, 1460, 'JOUER', () => {
+        this.addMobileButton(360, 1080, 'JOUER', () => {
             GAME_STATE.biker = this.bikers[this.bikerIndex]
             GAME_STATE.background = this.backgrounds[this.backgroundIndex]
 
@@ -344,7 +344,7 @@ export class MenuScene extends Phaser.Scene {
 
         this.backgroundPreview
             .setScale(scale)
-            .setPosition(mobile ? 540 : 960, mobile ? 470 : 420)
+            .setPosition(mobile ? 360 : 960, mobile ? 470 : 420)
 
         this.backgroundPreview.setCrop(
             (imageWidth - frameWidth / scale) / 2,
@@ -375,7 +375,7 @@ export class MenuScene extends Phaser.Scene {
         this.fitBackgroundPreview(backgroundKey)
 
         this.bikerPreview.setTexture(`${bikerKey}_menu_bike`)
-        this.bikerPreview.setPosition(mobile ? 540 : 960, mobile ? 610 : 500)
+        this.bikerPreview.setPosition(mobile ? 360 : 960, mobile ? 610 : 500)
         this.bikerPreview.setScale(mobile ? 0.9 : 0.75)
 
         this.bikerTitle.setText(`Personnage : ${biker.label}`)

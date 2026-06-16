@@ -199,16 +199,17 @@ export class GameScene extends Phaser.Scene {
     private updateCameraEffects() {
         const camera = this.cameras.main
 
-        let targetZoom = 1
+        const mobile = this.isMobileView()
+        let targetZoom = mobile ? 2.65 : 1
 
         // zone moyenne dangereuse
         if (this.angle >= 60) {
-            targetZoom = 1.02
+            targetZoom = mobile ? 2.72 : 1.02
         }
 
         // bavette
         if (this.angle >= 84 && this.angle <= 96) {
-            targetZoom = 1.05
+            targetZoom = mobile ? 2.82 : 1.05
 
             // micro shake bavette
             if (Math.random() < 0.08) {
@@ -218,7 +219,7 @@ export class GameScene extends Phaser.Scene {
 
         // ultra dangereux proche chute arrière
         if (this.angle >= 105) {
-            targetZoom = 1.08
+            targetZoom = mobile ? 2.95 : 1.08
 
             if (Math.random() < 0.18) {
                 camera.shake(80, 0.00)
@@ -678,6 +679,8 @@ Z Gaz | S Frein | A Main | E Genou`
     }
 
     private createBackground() {
+        const mobile = this.isMobileView()
+
         this.background1 = this.add.image(0, 0, GAME_STATE.background)
             .setOrigin(0, 0)
             .setDisplaySize(1920, 1080)
@@ -686,9 +689,9 @@ Z Gaz | S Frein | A Main | E Genou`
             .setOrigin(0, 0)
             .setDisplaySize(1920, 1080)
 
-        if (this.isMobileView()) {
-            this.cameras.main.setZoom(1.85)
-            this.cameras.main.setScroll(130, 250)
+        if (mobile) {
+            this.cameras.main.setZoom(1.75)
+            this.cameras.main.setScroll(120, 280)
         } else {
             this.cameras.main.setZoom(1)
             this.cameras.main.setScroll(0, 0)
@@ -721,9 +724,11 @@ Z Gaz | S Frein | A Main | E Genou`
             .setOrigin(0.5)
             .setScale(biker.bike.scale)
 
+        const mobile = this.isMobileView()
+
         this.bike = this.add.container(
-            biker.container.x,
-            biker.container.y
+            mobile ? 240 : biker.container.x,
+            mobile ? 1030 : biker.container.y
         ).setDepth(20)
 
         this.rider = this.add.image(
