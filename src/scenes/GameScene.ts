@@ -75,6 +75,12 @@ export class GameScene extends Phaser.Scene {
     private scrapeSound?: Phaser.Sound.BaseSound
     private gameOverPlayed = false
 
+
+    private isMobileView(): boolean {
+        return this.scale.gameSize.height > this.scale.gameSize.width
+    }
+
+
     constructor() {
         super('GameScene')
     }
@@ -275,27 +281,39 @@ export class GameScene extends Phaser.Scene {
     }
 
     private createHud() {
-        this.scoreText = this.add.text(25, 75, '', {
-            fontSize: '22px',
-            color: '#ffffff',
-            fontStyle: 'bold',
-            fontFamily: 'Arial',
-            backgroundColor: 'rgba(0, 0, 0, 0.45)',
-            padding: {x: 18, y: 14},
-            stroke: '#000000',
-            strokeThickness: 3
-        }).setDepth(999)
+        const mobile = this.isMobileView()
 
-        this.gameOverText = this.add.text(960, 330, '', {
-            fontSize: '52px',
-            color: '#ff5555',
-            align: 'center',
-            stroke: '#000000',
-            strokeThickness: 7
-        }).setOrigin(0.5).setDepth(60)
+        this.scoreText = this.add.text(
+            mobile ? 25 : 25,
+            mobile ? 90 : 75,
+            '',
+            {
+                fontSize: mobile ? '18px' : '22px',
+                color: '#ffffff',
+                fontStyle: 'bold',
+                fontFamily: 'Arial',
+                backgroundColor: 'rgba(0, 0, 0, 0.45)',
+                padding: {x: mobile ? 12 : 18, y: mobile ? 10 : 14},
+                stroke: '#000000',
+                strokeThickness: 3
+            }
+        ).setDepth(999)
+
+        this.gameOverText = this.add.text(
+            mobile ? 960 : 960,
+            mobile ? 360 : 330,
+            '',
+            {
+                fontSize: mobile ? '42px' : '52px',
+                color: '#ff5555',
+                align: 'center',
+                stroke: '#000000',
+                strokeThickness: 7
+            }
+        ).setOrigin(0.5).setDepth(60)
 
         this.mutationText = this.add.text(960, 390, '', {
-            fontSize: '88px',
+            fontSize: mobile ? '64px' : '88px',
             color: '#ffdd66',
             fontStyle: 'bold',
             stroke: '#000000',
@@ -600,6 +618,16 @@ export class GameScene extends Phaser.Scene {
                 ? 'MAX'
                 : this.mutationLevel * this.mutationStep
 
+        if (this.isMobileView()) {
+            this.scoreText.setText(
+                `🏁 ${Math.floor(this.score)}   ⭐ ${Math.floor(this.bestScore)}
+⚡ x${this.combo.toFixed(1)}   🧬 ${this.getMutationLabel()}
+📐 ${Math.floor(this.angle)}°   🔥 ${this.getDangerLabel()}
+✨ ${this.scrapeCount}x   ⏱ ${this.scrapeTime.toFixed(1)}s`
+            )
+            return
+        }
+
         this.scoreText.setText(
             `🏁 SCORE  ${Math.floor(this.score)}
 ⭐ BEST   ${Math.floor(this.bestScore)}
@@ -654,6 +682,14 @@ Z Gaz | S Frein | A Main | E Genou`
         this.background2 = this.add.image(1920, 0, GAME_STATE.background)
             .setOrigin(0, 0)
             .setDisplaySize(1920, 1080)
+
+        if (this.isMobileView()) {
+            this.cameras.main.setZoom(1.85)
+            this.cameras.main.setScroll(130, 250)
+        } else {
+            this.cameras.main.setZoom(1)
+            this.cameras.main.setScroll(0, 0)
+        }
     }
 
     private updateBackground(dt: number) {

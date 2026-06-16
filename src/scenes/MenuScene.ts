@@ -190,16 +190,145 @@ export class MenuScene extends Phaser.Scene {
 
             this.scene.start('GameScene')
         })
+
+        if (this.scale.gameSize.height > this.scale.gameSize.width) {
+            this.setupMobileMenu()
+        }
     }
 
-    private
-
-    fitBackgroundPreview(textureKey
-                             :
-                             string
+    private addMobileButton(
+        x: number,
+        y: number,
+        label: string,
+        callback: () => void,
+        width = 260,
+        height = 62
     ) {
-        const frameWidth = 1000
-        const frameHeight = 420
+        const button = this.add.rectangle(x, y, width, height, 0x000000, 0.55)
+            .setStrokeStyle(3, 0xffffff, 0.8)
+            .setInteractive({ useHandCursor: true })
+
+        const text = this.add.text(x, y, label, {
+            fontSize: '26px',
+            color: '#ffffff',
+            fontStyle: 'bold',
+            stroke: '#000000',
+            strokeThickness: 4
+        }).setOrigin(0.5)
+
+        button.on('pointerdown', callback)
+        text.setInteractive({ useHandCursor: true }).on('pointerdown', callback)
+    }
+
+    private setupMobileMenu() {
+        this.children.removeAll()
+
+        const best = Number(localStorage.getItem('mue-rider-best-score') ?? 0)
+
+        this.add.text(960, 80, 'MUE RIDER', {
+            fontSize: '66px',
+            color: '#ffffff',
+            stroke: '#000000',
+            strokeThickness: 6
+        }).setOrigin(0.5)
+
+        this.add.text(960, 150, `Best score : ${best}`, {
+            fontSize: '30px',
+            color: '#ffdd66',
+            stroke: '#000000',
+            strokeThickness: 4
+        }).setOrigin(0.5)
+
+        this.backgroundPreview = this.add.image(960, 360, GAME_STATE.background)
+            .setOrigin(0.5)
+            .setAlpha(0.95)
+
+        this.bikerPreview = this.add.image(960, 500, `${GAME_STATE.biker}_menu_bike`)
+            .setOrigin(0.69)
+            .setScale(0.65)
+
+        this.bikerTitle = this.add.text(960, 655, '', {
+            fontSize: '32px',
+            color: '#ffffff',
+            stroke: '#000000',
+            strokeThickness: 4
+        }).setOrigin(0.5)
+
+        this.backgroundTitle = this.add.text(960, 705, '', {
+            fontSize: '28px',
+            color: '#cccccc',
+            stroke: '#000000',
+            strokeThickness: 4
+        }).setOrigin(0.5)
+
+        this.menuSoundText = this.add.text(960, 0, '', {
+            fontSize: '1px',
+        })
+
+        this.gameSoundText = this.add.text(960, 0, '', {
+            fontSize: '1px',
+        })
+
+        this.addMobileButton(520, 805, '← MOTO', () => {
+            this.bikerIndex = Phaser.Math.Wrap(this.bikerIndex - 1, 0, this.bikers.length)
+            this.refreshMenu()
+        })
+
+        this.addMobileButton(1400, 805, 'MOTO →', () => {
+            this.bikerIndex = Phaser.Math.Wrap(this.bikerIndex + 1, 0, this.bikers.length)
+            this.refreshMenu()
+        })
+
+        this.addMobileButton(520, 890, '← DÉCOR', () => {
+            this.backgroundIndex = Phaser.Math.Wrap(this.backgroundIndex - 1, 0, this.backgrounds.length)
+            this.refreshMenu()
+        })
+
+        this.addMobileButton(1400, 890, 'DÉCOR →', () => {
+            this.backgroundIndex = Phaser.Math.Wrap(this.backgroundIndex + 1, 0, this.backgrounds.length)
+            this.refreshMenu()
+        })
+
+        this.addMobileButton(720, 985, 'SON MENU', () => {
+            GAME_STATE.menuSoundEnabled = !GAME_STATE.menuSoundEnabled
+
+            if (GAME_STATE.menuSoundEnabled) {
+                this.sound.stopByKey('menu_music')
+                this.menuMusic = this.sound.add('menu_music', {
+                    loop: true,
+                    volume: 0.35
+                })
+                this.menuMusic.play()
+            } else {
+                this.sound.stopByKey('menu_music')
+            }
+
+            this.refreshMenu()
+        })
+
+        this.addMobileButton(1200, 985, 'SON JEU', () => {
+            GAME_STATE.gameSoundEnabled = !GAME_STATE.gameSoundEnabled
+            this.refreshMenu()
+        })
+
+        this.addMobileButton(960, 900, 'JOUER', () => {
+            GAME_STATE.biker = this.bikers[this.bikerIndex]
+            GAME_STATE.background = this.backgrounds[this.backgroundIndex]
+
+            this.menuMusic?.stop()
+            this.sound.stopByKey('menu_music')
+
+            this.scene.start('GameScene')
+        }, 300, 80)
+
+        this.refreshMenu()
+    }
+
+    private fitBackgroundPreview(textureKey: string) {
+        const mobile = this.scale.gameSize.height > this.scale.gameSize.width
+
+        const frameWidth = mobile ? 780 : 1000
+        const frameHeight = mobile ? 430 : 420
 
         this.backgroundPreview.setTexture(textureKey)
 
@@ -216,7 +345,7 @@ export class MenuScene extends Phaser.Scene {
 
         this.backgroundPreview
             .setScale(scale)
-            .setPosition(960, 420)
+            .setPosition(960, mobile ? 360 : 420)
 
         this.backgroundPreview.setCrop(
             (imageWidth - frameWidth / scale) / 2,
@@ -226,19 +355,19 @@ export class MenuScene extends Phaser.Scene {
         )
     }
 
-    private
+    private refreshMenu() {
+        const mobile = this.scale.gameSize.height > this.scale.gameSize.width
 
-    refreshMenu() {
         const bikerKey = this.bikers[this.bikerIndex]
         const backgroundKey = this.backgrounds[this.backgroundIndex]
         const biker = BIKERS[bikerKey]
 
         this.menuSoundText.setText(
-            `M = Son menu : ${GAME_STATE.menuSoundEnabled ? 'ON' : 'OFF'}`
+            `${mobile ? 'Son menu' : 'M = Son menu'} : ${GAME_STATE.menuSoundEnabled ? 'ON' : 'OFF'}`
         )
 
         this.gameSoundText.setText(
-            `G = Son jeu : ${GAME_STATE.gameSoundEnabled ? 'ON' : 'OFF'}`
+            `${mobile ? 'Son jeu' : 'G = Son jeu'} : ${GAME_STATE.gameSoundEnabled ? 'ON' : 'OFF'}`
         )
 
         GAME_STATE.biker = bikerKey
@@ -247,13 +376,14 @@ export class MenuScene extends Phaser.Scene {
         this.fitBackgroundPreview(backgroundKey)
 
         this.bikerPreview.setTexture(`${bikerKey}_menu_bike`)
-        this.bikerPreview.setPosition(960, 500)
-        this.bikerPreview.setScale(0.75)
+        this.bikerPreview.setPosition(960, mobile ? 500 : 500)
+        this.bikerPreview.setScale(mobile ? 0.65 : 0.75)
 
         this.bikerTitle.setText(`Personnage : ${biker.label}`)
 
         const bgLabel: Record<BackgroundKey, string> = {
             suburb: 'Banlieue brésilienne',
+            highway: 'Autoroute',
             industrial: 'Zone industrielle',
             los_angeles: 'Los Angeles',
             ny: 'New York',
