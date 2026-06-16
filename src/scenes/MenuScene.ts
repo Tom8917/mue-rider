@@ -268,27 +268,41 @@ export class MenuScene extends Phaser.Scene {
         this.menuSoundText = this.add.text(360, 0, '', { fontSize: '1px' })
         this.gameSoundText = this.add.text(360, 0, '', { fontSize: '1px' })
 
-        this.addMobileButton(180, 1050, '← MOTO', () => {
-            this.bikerIndex = Phaser.Math.Wrap(this.bikerIndex - 1, 0, this.bikers.length)
-            this.refreshMenu()
-        })
-
-        this.addMobileButton(540, 1050, 'MOTO →', () => {
-            this.bikerIndex = Phaser.Math.Wrap(this.bikerIndex + 1, 0, this.bikers.length)
-            this.refreshMenu()
-        })
-
-        this.addMobileButton(180, 1160, '← DÉCOR', () => {
+        // Boutons sur l'aperçu du fond
+        this.addMobileButton(95, 470, '←', () => {
             this.backgroundIndex = Phaser.Math.Wrap(this.backgroundIndex - 1, 0, this.backgrounds.length)
             this.refreshMenu()
-        })
+        }, 70, 90)
 
-        this.addMobileButton(540, 1160, 'DÉCOR →', () => {
+        this.addMobileButton(625, 470, '→', () => {
             this.backgroundIndex = Phaser.Math.Wrap(this.backgroundIndex + 1, 0, this.backgrounds.length)
             this.refreshMenu()
-        })
+        }, 70, 90)
 
-        this.addMobileButton(180, 1280, 'SON MENU', () => {
+// Boutons sur l'aperçu de la moto
+        this.addMobileButton(95, 610, '←', () => {
+            this.bikerIndex = Phaser.Math.Wrap(this.bikerIndex - 1, 0, this.bikers.length)
+            this.refreshMenu()
+        }, 70, 90)
+
+        this.addMobileButton(625, 610, '→', () => {
+            this.bikerIndex = Phaser.Math.Wrap(this.bikerIndex + 1, 0, this.bikers.length)
+            this.refreshMenu()
+        }, 70, 90)
+
+// Bouton jouer bien séparé
+        this.addMobileButton(360, 1035, 'JOUER', () => {
+            GAME_STATE.biker = this.bikers[this.bikerIndex]
+            GAME_STATE.background = this.backgrounds[this.backgroundIndex]
+
+            this.menuMusic?.stop()
+            this.sound.stopByKey('menu_music')
+
+            this.scene.start('GameScene')
+        }, 520, 110)
+
+// Boutons sons en bas
+        this.addMobileButton(180, 1190, 'SON MENU', () => {
             GAME_STATE.menuSoundEnabled = !GAME_STATE.menuSoundEnabled
 
             if (GAME_STATE.menuSoundEnabled) {
@@ -305,22 +319,10 @@ export class MenuScene extends Phaser.Scene {
             this.refreshMenu()
         })
 
-        this.addMobileButton(540, 1280, 'SON JEU', () => {
+        this.addMobileButton(540, 1190, 'SON JEU', () => {
             GAME_STATE.gameSoundEnabled = !GAME_STATE.gameSoundEnabled
             this.refreshMenu()
         })
-
-        this.addMobileButton(360, 1080, 'JOUER', () => {
-            GAME_STATE.biker = this.bikers[this.bikerIndex]
-            GAME_STATE.background = this.backgrounds[this.backgroundIndex]
-
-            this.menuMusic?.stop()
-            this.sound.stopByKey('menu_music')
-
-            this.scene.start('GameScene')
-        }, 520, 110)
-
-        this.refreshMenu()
     }
 
     private fitBackgroundPreview(textureKey: string) {
