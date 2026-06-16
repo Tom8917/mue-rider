@@ -5,7 +5,7 @@ import type {BikerKey} from '../data/bikers'
 
 export class MenuScene extends Phaser.Scene {
     private bikers: BikerKey[] = ['portugal', 'brazil', 'usa']
-    private backgrounds: BackgroundKey[] = ['suburb', 'industrial', 'los_angeles', 'ny']
+    private backgrounds: BackgroundKey[] = ['suburb', 'industrial', 'los_angeles', 'ny', 'las_vegas', 'miami']
 
     private bikerIndex = 0
     private backgroundIndex = 0
@@ -31,6 +31,8 @@ export class MenuScene extends Phaser.Scene {
         this.load.image('industrial', '/assets/backgrounds/industrial.png')
         this.load.image('los_angeles', '/assets/backgrounds/los_angeles.png')
         this.load.image('ny', '/assets/backgrounds/ny.png')
+        this.load.image('las_vegas', '/assets/backgrounds/las_vegas.png')
+        this.load.image('miami', '/assets/backgrounds/miami.png')
 
         for (const biker of Object.values(BIKERS)) {
             const folder = `/assets/bikers/${biker.folder}`
@@ -255,7 +257,8 @@ export class MenuScene extends Phaser.Scene {
             industrial: 'Zone industrielle',
             los_angeles: 'Los Angeles',
             ny: 'New York',
-            parking: 'Parking',
+            las_vegas: 'Las Vegas',
+            miami: 'Miami',
         }
 
         this.backgroundTitle.setText(`Environnement : ${bgLabel[backgroundKey]}`)

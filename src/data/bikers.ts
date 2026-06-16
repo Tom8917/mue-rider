@@ -9,6 +9,8 @@ export type RiderPoseConfig = {
     flipY?: boolean
 }
 
+const RIDER_X_OFFSET = 100
+
 export type BikerConfig = {
     key: BikerKey
     label: string
@@ -58,7 +60,7 @@ export const BIKERS: Record<BikerKey, BikerConfig> = {
         label: 'Portugal - Yamaha YBR125',
         folder: 'portugal',
 
-        container: { x: 300, y: 920 },
+        container: { x: 300 + RIDER_X_OFFSET, y: 920 },
         bike: { x: 100, y: -55, scale: 0.52 },
 
         rider: {
@@ -91,7 +93,7 @@ export const BIKERS: Record<BikerKey, BikerConfig> = {
             gravityDown: 4.5,
             gravityBack: 1.8,
             acceleration: 14,
-            maxSpeed: 620,
+            maxSpeed: 650,
         },
     },
 
@@ -100,7 +102,7 @@ export const BIKERS: Record<BikerKey, BikerConfig> = {
         label: 'Brésil - Triumph 400',
         folder: 'brazil',
 
-        container: { x: 300, y: 920 },
+        container: { x: 300 + RIDER_X_OFFSET, y: 920 },
         bike: { x: 110, y: -65, scale: 0.52 },
 
         rider: {
@@ -133,7 +135,7 @@ export const BIKERS: Record<BikerKey, BikerConfig> = {
             gravityDown: 4.4,
             gravityBack: 2,
             acceleration: 16,
-            maxSpeed: 650,
+            maxSpeed: 750,
         },
     },
 
@@ -142,13 +144,13 @@ export const BIKERS: Record<BikerKey, BikerConfig> = {
         label: 'USA - Yamaha YZ450',
         folder: 'usa',
 
-        container: { x: 300, y: 920 },
+        container: { x: 300 + RIDER_X_OFFSET, y: 920 },
         bike: { x: 110, y: -65, scale: 0.55 },
 
         rider: {
             normal: { x: 120, y: -125, scale: 0.35, angle: 5 },
             hand: { x: 82, y: -130, scale: 0.47, angle: 20 },
-            knee: { x: 120, y: -170, scale: 0.45, angle: 20 },
+            knee: { x: 120, y: -170, scale: 0.45, angle: 19 },
             crash: { x: 60, y: -150, scale: 0.42, angle: 100, flipY: true },
 
             mutant: {
@@ -175,7 +177,7 @@ export const BIKERS: Record<BikerKey, BikerConfig> = {
             gravityDown: 5.2,
             gravityBack: 1.3,
             acceleration: 22,
-            maxSpeed: 720,
+            maxSpeed: 700,
         },
     },
 }
