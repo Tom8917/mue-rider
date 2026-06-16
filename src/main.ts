@@ -5,14 +5,17 @@ import './styles/game.css'
 
 const isPortrait = window.innerHeight > window.innerWidth
 
+const GAME_WIDTH = isPortrait ? 720 : 1920
+const GAME_HEIGHT = isPortrait ? 1280 : 1080
+
 const config: Phaser.Types.Core.GameConfig = {
     type: Phaser.AUTO,
 
     scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH,
-        width: isPortrait ? 1080 : 1920,
-        height: isPortrait ? 1920 : 1080
+        width: GAME_WIDTH,
+        height: GAME_HEIGHT
     },
 
     backgroundColor: '#1a1a1a',
@@ -35,9 +38,11 @@ const config: Phaser.Types.Core.GameConfig = {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-    const controls = document.querySelector('#mobile-controls')
+    const controls = document.querySelector<HTMLElement>('#mobile-controls')
 
     if (!controls) return
+
+    const activeActions = new Map<number, string>()
 
     const send = (action: string, down: boolean) => {
         window.dispatchEvent(new CustomEvent('mobile-input', {
@@ -45,36 +50,38 @@ window.addEventListener('DOMContentLoaded', () => {
         }))
     }
 
-    controls.addEventListener('pointerdown', (event) => {
+    const stopAction = (pointerId: number) => {
+        const action = activeActions.get(pointerId)
+
+        if (!action) return
+
+        send(action, false)
+        activeActions.delete(pointerId)
+    }
+
+    controls.addEventListener('pointerdown', (event: PointerEvent) => {
         const target = event.target as HTMLElement
-        const button = target.closest('button') as HTMLButtonElement | null
+        const button = target.closest<HTMLButtonElement>('button')
 
         event.preventDefault()
 
-        if (button?.dataset.action) {
-            send(button.dataset.action, true)
-            return
-        }
+        const action = button?.dataset.action ?? 'gas'
 
-        send('gas', true)
+        activeActions.set(event.pointerId, action)
+        send(action, true)
     })
 
-    controls.addEventListener('pointerup', (event) => {
+    controls.addEventListener('pointerup', (event: PointerEvent) => {
         event.preventDefault()
-
-        send('gas', false)
-        send('brake', false)
-        send('hand', false)
-        send('trick', false)
-        send('restart', false)
-        send('menu', false)
+        stopAction(event.pointerId)
     })
 
-    controls.addEventListener('pointercancel', () => {
-        send('gas', false)
-        send('brake', false)
-        send('hand', false)
-        send('trick', false)
+    controls.addEventListener('pointercancel', (event: PointerEvent) => {
+        stopAction(event.pointerId)
+    })
+
+    controls.addEventListener('pointerleave', (event: PointerEvent) => {
+        stopAction(event.pointerId)
     })
 })
 
