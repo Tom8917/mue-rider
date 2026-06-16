@@ -1,4 +1,5 @@
 import type { BikerKey } from './bikers'
+import type { RadioChannel } from './radios'
 
 export type BackgroundKey =
     | 'suburb'
@@ -12,6 +13,7 @@ export type BackgroundKey =
 export const GAME_STATE = {
     biker: 'portugal' as BikerKey,
     background: 'suburb' as BackgroundKey,
+    selectedRadio: 'channel_1' as RadioChannel,
     menuSoundEnabled: true,
     gameSoundEnabled: true,
 }

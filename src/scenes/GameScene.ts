@@ -2,10 +2,15 @@ import Phaser from 'phaser'
 import {BIKERS} from '../data/bikers'
 import type {BikerConfig} from '../data/bikers'
 import {GAME_STATE} from '../data/gameState'
+import { RADIOS, type RadioTrack } from '../data/radios'
 
 export class GameScene extends Phaser.Scene {
     private background1!: Phaser.GameObjects.Image
     private background2!: Phaser.GameObjects.Image
+
+    private currentTrack?: RadioTrack
+    private currentTrackIndex = 0
+    private radioText!: Phaser.GameObjects.Text
 
     private currentBiker: BikerConfig = BIKERS.portugal
 
@@ -30,6 +35,7 @@ export class GameScene extends Phaser.Scene {
         trick: Phaser.Input.Keyboard.Key
         restart: Phaser.Input.Keyboard.Key
         menu: Phaser.Input.Keyboard.Key
+        radioNext: Phaser.Input.Keyboard.Key
     }
 
     private angle = 0
@@ -69,6 +75,7 @@ export class GameScene extends Phaser.Scene {
         trick: false,
         restart: false,
         menu: false,
+        radioNext: false,
     }
 
     private gameMusic?: Phaser.Sound.BaseSound
@@ -114,7 +121,12 @@ export class GameScene extends Phaser.Scene {
             this.load.image(`${biker.key}_sparks_big`, `${folder}/sparks_big.png`)
         }
 
-        this.load.audio('game_music', '/assets/audio/music_1.mp3')
+        for (const [channelKey, radio] of Object.entries(RADIOS)) {
+            for (const track of radio.tracks) {
+                this.load.audio(track.key, `/assets/audio/radios/${channelKey}/${track.file}`)
+            }
+        }
+
         this.load.audio('mutation_sound', '/assets/audio/mutation.wav')
         this.load.audio('scrape_sound', '/assets/audio/scrape.mp3')
         this.load.audio('crash_sound', '/assets/audio/crash.wav')
@@ -125,7 +137,11 @@ export class GameScene extends Phaser.Scene {
         document.body.classList.add('game-active')
 
         this.sound.stopByKey('menu_music')
-        this.sound.stopByKey('game_music')
+        for (const radio of Object.values(RADIOS)) {
+            for (const track of radio.tracks) {
+                this.sound.stopByKey(track.key)
+            }
+        }
 
         this.resetGameState()
         this.gameOverPlayed = false
@@ -136,7 +152,8 @@ export class GameScene extends Phaser.Scene {
             hand: Phaser.Input.Keyboard.KeyCodes.A,
             trick: Phaser.Input.Keyboard.KeyCodes.E,
             restart: Phaser.Input.Keyboard.KeyCodes.SPACE,
-            menu: Phaser.Input.Keyboard.KeyCodes.ESC
+            menu: Phaser.Input.Keyboard.KeyCodes.ESC,
+            radioNext: Phaser.Input.Keyboard.KeyCodes.R
         }) as any
 
         window.addEventListener('mobile-input', this.handleMobileInput as EventListener)
@@ -157,6 +174,7 @@ export class GameScene extends Phaser.Scene {
         this.hudCamera.setZoom(1)
 
         this.cameras.main.ignore([
+            this.radioText,
             this.scoreText,
             this.gameOverText,
             this.mutationText,
@@ -169,18 +187,76 @@ export class GameScene extends Phaser.Scene {
         ])
 
         if (GAME_STATE.gameSoundEnabled) {
-            this.gameMusic = this.sound.add('game_music', {
-                loop: true,
-                volume: 0.30
-            })
-
-            this.gameMusic.play()
+            this.startRadioMusic()
 
             this.scrapeSound = this.sound.add('scrape_sound', {
                 loop: true,
                 volume: 1.5
             })
         }
+    }
+
+    private startRadioMusic() {
+        const station = RADIOS[GAME_STATE.selectedRadio]
+
+        if (this.currentTrackIndex >= station.tracks.length) {
+            this.currentTrackIndex = 0
+        }
+
+        const track = station.tracks[this.currentTrackIndex]
+
+        this.currentTrack = track
+
+        this.gameMusic?.stop()
+
+        this.gameMusic = this.sound.add(track.key, {
+            volume: 0.30
+        })
+
+        this.gameMusic.play()
+
+        const artist = track.artist ? ` - ${track.artist}` : ''
+
+        this.radioText.setPosition(
+            this.isMobileView() ? 360 : 960,
+            this.isMobileView() ? 300 : 150
+        )
+
+        this.radioText.setText(
+            `📻 ${station.name}\n🎵 ${track.title}${artist}`
+        )
+
+        this.radioText.setAlpha(1)
+
+        this.tweens.killTweensOf(this.radioText)
+
+        this.tweens.add({
+            targets: this.radioText,
+            alpha: 0,
+            delay: 3500,
+            duration: 800
+        })
+
+        // morceau suivant automatiquement
+        this.currentTrackIndex++
+
+        if (this.currentTrackIndex >= station.tracks.length) {
+            this.currentTrackIndex = 0
+        }
+
+        // quand le son finit → suivant
+        this.gameMusic.once('complete', () => {
+            this.startRadioMusic()
+        })
+    }
+
+    private skipRadioTrack() {
+        if (!GAME_STATE.gameSoundEnabled) {
+            return
+        }
+
+        this.gameMusic?.stop()
+        this.startRadioMusic()
     }
 
     private handleMobileInput = (event: Event) => {
@@ -251,6 +327,11 @@ export class GameScene extends Phaser.Scene {
             return
         }
 
+        if (Phaser.Input.Keyboard.JustDown(this.keys.radioNext) || this.mobile.radioNext) {
+            this.mobile.radioNext = false
+            this.skipRadioTrack()
+        }
+
         if (this.isGameOver) {
             if (Phaser.Input.Keyboard.JustDown(this.keys.restart) || this.mobile.restart) {
                 this.mobile.restart = false
@@ -290,9 +371,29 @@ export class GameScene extends Phaser.Scene {
     private createHud() {
         const mobile = this.isMobileView()
 
+        this.radioText = this.add.text(
+            mobile ? 360 : 960,
+            mobile ? 260 : 140,
+            '',
+            {
+                fontSize: mobile ? '22px' : '26px',
+                color: '#ffdd66',
+                fontStyle: 'bold',
+                align: 'center',
+                backgroundColor: 'rgba(0, 0, 0, 0.45)',
+                padding: { x: 14, y: 8 },
+                stroke: '#000000',
+                strokeThickness: 4
+            }
+        )
+            .setOrigin(0.5)
+            .setDepth(999)
+            .setScrollFactor(0)
+            .setAlpha(0)
+
         this.scoreText = this.add.text(
             mobile ? 25 : 25,
-            mobile ? 80 : 75,
+            mobile ? 125 : 75,
             '',
             {
                 fontSize: mobile ? '16px' : '22px',
@@ -649,7 +750,7 @@ export class GameScene extends Phaser.Scene {
 ✨ BAVETTE ${this.scrapeCount}x
 ⏱ FROTTE  ${this.scrapeTime.toFixed(1)}s
 
-Z Gaz | S Frein | A Main | E Genou`
+Z Gaz | S Frein | A Main | E Genou | R Radio`
         )
     }
 

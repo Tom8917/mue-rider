@@ -83,4 +83,11 @@ canvas {
         width: 80px;
         height: 48px;
     }
+
+    [data-action="radioNext"] {
+        left: 258px;
+        bottom: 22px;
+        width: 80px;
+        height: 75px;
+    }
 }

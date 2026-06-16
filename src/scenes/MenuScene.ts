@@ -2,10 +2,15 @@ import Phaser from 'phaser'
 import {GAME_STATE, type BackgroundKey} from '../data/gameState'
 import {BIKERS} from '../data/bikers'
 import type {BikerKey} from '../data/bikers'
+import { RADIOS, type RadioChannel } from '../data/radios'
 
 export class MenuScene extends Phaser.Scene {
     private bikers: BikerKey[] = ['portugal', 'brazil', 'usa']
     private backgrounds: BackgroundKey[] = ['suburb', 'industrial', 'los_angeles', 'ny', 'las_vegas', 'miami']
+
+    private radios: RadioChannel[] = ['channel_1', 'channel_2', 'channel_3']
+    private radioIndex = 0
+    private radioTitle!: Phaser.GameObjects.Text
 
     private bikerIndex = 0
     private backgroundIndex = 0
@@ -42,14 +47,13 @@ export class MenuScene extends Phaser.Scene {
             this.load.image(`${biker.key}_menu_rear_wheel`, `${folder}/rear_wheel.png`)
         }
 
-        this.load.audio('menu_music', '/assets/audio/music_2.mp3')
+        this.load.audio('menu_music', '/assets/audio/menu.mp3')
     }
 
     create() {
         document.body.classList.remove('game-active')
 
 // reset musique jeu
-        this.sound.stopByKey('game_music')
         this.sound.stopByKey('menu_music')
 
         if (GAME_STATE.menuSoundEnabled) {
@@ -63,6 +67,8 @@ export class MenuScene extends Phaser.Scene {
 
         this.bikerIndex = this.bikers.indexOf(GAME_STATE.biker)
         this.backgroundIndex = this.backgrounds.indexOf(GAME_STATE.background)
+
+        this.radioIndex = this.radios.indexOf(GAME_STATE.selectedRadio)
 
         const best = Number(localStorage.getItem('mue-rider-best-score') ?? 0)
 
@@ -121,8 +127,15 @@ export class MenuScene extends Phaser.Scene {
             strokeThickness: 4
         }).setOrigin(0.5)
 
+        this.radioTitle = this.add.text(960, 790, '', {
+            fontSize: '26px',
+            color: '#ffdd66',
+            stroke: '#000000',
+            strokeThickness: 4
+        }).setOrigin(0.5)
+
         this.add.text(960, 850,
-            '← / → personnage     ↑ / ↓ décor\nESPACE jouer     ESC quitter/revenir',
+            '← / → personnage     ↑ / ↓ décor\nR radio     ESPACE jouer     ESC quitter/revenir',
             {
                 fontSize: '26px',
                 color: '#ffffff',
@@ -131,6 +144,11 @@ export class MenuScene extends Phaser.Scene {
                 strokeThickness: 4
             }
         ).setOrigin(0.5)
+
+        this.input.keyboard?.on('keydown-R', () => {
+            this.radioIndex = Phaser.Math.Wrap(this.radioIndex + 1, 0, this.radios.length)
+            this.refreshMenu()
+        })
 
         this.menuSoundText = this.add.text(760, 930, '', {
             fontSize: '24px',
@@ -279,6 +297,19 @@ export class MenuScene extends Phaser.Scene {
             strokeThickness: 5
         }).setOrigin(0.5)
 
+        this.radioTitle = this.add.text(360, 940, '', {
+            fontSize: '28px',
+            color: '#ffdd66',
+            align: 'center',
+            stroke: '#000000',
+            strokeThickness: 5
+        }).setOrigin(0.5)
+
+        this.addMobileButton(360, 1030, 'RADIO', () => {
+            this.radioIndex = Phaser.Math.Wrap(this.radioIndex + 1, 0, this.radios.length)
+            this.refreshMenu()
+        }, 260, 55)
+
         this.menuSoundText = this.add.text(360, 0, '', { fontSize: '1px' })
         this.gameSoundText = this.add.text(360, 0, '', { fontSize: '1px' })
 
@@ -305,7 +336,7 @@ export class MenuScene extends Phaser.Scene {
         }, 70, 90)
 
 // Bouton jouer bien séparé
-        this.addMobileButton(360, 1035, 'JOUER', () => {
+        this.addMobileButton(360, 1110, 'JOUER', () => {
             GAME_STATE.biker = this.bikers[this.bikerIndex]
             GAME_STATE.background = this.backgrounds[this.backgroundIndex]
 
@@ -313,7 +344,7 @@ export class MenuScene extends Phaser.Scene {
             this.sound.stopByKey('menu_music')
 
             this.scene.start('GameScene')
-        }, 520, 110)
+        }, 360, 75)
 
 // Boutons sons en bas
         this.addMobileButton(180, 1190, 'SON MENU', () => {
@@ -376,6 +407,13 @@ export class MenuScene extends Phaser.Scene {
         const bikerKey = this.bikers[this.bikerIndex]
         const backgroundKey = this.backgrounds[this.backgroundIndex]
         const biker = BIKERS[bikerKey]
+
+        const radioKey = this.radios[this.radioIndex]
+        const radio = RADIOS[radioKey]
+
+        GAME_STATE.selectedRadio = radioKey
+
+        this.radioTitle.setText(`Radio : ${radio.name} - ${radio.description}`)
 
         this.menuSoundText.setText(
             `${mobile ? 'Son menu' : 'M = Son menu'} : ${GAME_STATE.menuSoundEnabled ? 'ON' : 'OFF'}`
