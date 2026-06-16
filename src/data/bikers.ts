@@ -1,55 +1,39 @@
 export type BikerKey = 'portugal' | 'brazil' | 'usa'
 
+export type RiderPoseConfig = {
+    x: number
+    y: number
+    scale: number
+    angle: number
+    flipX?: boolean
+    flipY?: boolean
+}
+
 export type BikerConfig = {
     key: BikerKey
     label: string
     folder: string
 
-    container: {
-        x: number
-        y: number
-    }
+    container: { x: number; y: number }
 
-    bike: {
-        x: number
-        y: number
-        scale: number
-    }
+    bike: { x: number; y: number; scale: number }
 
     rider: {
-        normal: {
-            x: number
-            y: number
-            scale: number
-            angle: number
-        }
+        normal: RiderPoseConfig
+        hand: RiderPoseConfig
+        knee: RiderPoseConfig
+        crash: RiderPoseConfig
 
-        hand: {
-            x: number
-            y: number
-            scale: number
-            angle: number
-        }
-
-        knee: {
-            x: number
-            y: number
-            scale: number
-            angle: number
+        mutant: {
+            normal: RiderPoseConfig
+            hand: RiderPoseConfig
+            knee: RiderPoseConfig
+            crash: RiderPoseConfig
         }
     }
 
-    rearWheel: {
-        x: number
-        y: number
-        scale: number
-    }
-
-    frontWheel: {
-        x: number
-        y: number
-        scale: number
-    }
+    rearWheel: { x: number; y: number; scale: number }
+    frontWheel: { x: number; y: number; scale: number }
 
     sparks: {
         small: { x: number; y: number; scale: number }
@@ -75,29 +59,19 @@ export const BIKERS: Record<BikerKey, BikerConfig> = {
         folder: 'portugal',
 
         container: { x: 300, y: 920 },
-
-        bike: { x: 100, y: -55, scale: 0.50 },
+        bike: { x: 100, y: -55, scale: 0.52 },
 
         rider: {
-            normal: {
-                x: 90,
-                y: -110,
-                scale: 0.37,
-                angle: 5
-            },
+            normal: { x: 95, y: -105, scale: 0.37, angle: -5 },
+            hand: { x: 75, y: -90, scale: 0.38, angle: 20 },
+            knee: { x: 95, y: -140, scale: 0.38, angle: 20 },
+            crash: { x: 40, y: -150, scale: 0.42, angle: -85, flipY: true },
 
-            hand: {
-                x: 75,
-                y: -90,
-                scale: 0.38,
-                angle: 20
-            },
-
-            knee: {
-                x: 100,
-                y: -140,
-                scale: 0.38,
-                angle: 20
+            mutant: {
+                normal: { x: 85, y: -115, scale: 0.40, angle: 5 },
+                hand: { x: 55, y: -105, scale: 0.41, angle: 20 },
+                knee: { x: 85, y: -160, scale: 0.41, angle: 15 },
+                crash: { x: 50, y: -150, scale: 0.45, angle: -110, flipY: true },
             },
         },
 
@@ -112,10 +86,10 @@ export const BIKERS: Record<BikerKey, BikerConfig> = {
         },
 
         physics: {
-            gasPower: 14,
-            brakePower: 22,
+            gasPower: 12,
+            brakePower: 8,
             gravityDown: 4.5,
-            gravityBack: 2.2,
+            gravityBack: 1.8,
             acceleration: 14,
             maxSpeed: 620,
         },
@@ -127,29 +101,19 @@ export const BIKERS: Record<BikerKey, BikerConfig> = {
         folder: 'brazil',
 
         container: { x: 300, y: 920 },
-
         bike: { x: 110, y: -65, scale: 0.52 },
 
         rider: {
-            normal: {
-                x: 100,
-                y: -125,
-                scale: 0.47,
-                angle: -7
-            },
+            normal: { x: 100, y: -125, scale: 0.47, angle: -7 },
+            hand: { x: 85, y: -120, scale: 0.49, angle: 40 },
+            knee: { x: 130, y: -155, scale: 0.48, angle: 55 },
+            crash: { x: 60, y: -180, scale: 0.42, angle: -60 },
 
-            hand: {
-                x: 85,
-                y: -120,
-                scale: 0.49,
-                angle: 40
-            },
-
-            knee: {
-                x: 130,
-                y: -155,
-                scale: 0.48,
-                angle: 55
+            mutant: {
+                normal: { x: 100, y: -130, scale: 0.55, angle: -7 },
+                hand: { x: 70, y: -130, scale: 0.52, angle: 40 },
+                knee: { x: 128, y: -195, scale: 0.57, angle: 70 },
+                crash: {  x: 60, y: -180, scale: 0.50, angle: -60 },
             },
         },
 
@@ -157,17 +121,17 @@ export const BIKERS: Record<BikerKey, BikerConfig> = {
         frontWheel: { x: 234, y: -20, scale: 0.58 },
 
         sparks: {
-            small: { x: -35, y: -125, scale: 0.35 },
-            big: { x: -20, y: -135, scale: 0.35 },
+            small: { x: -5, y: -135, scale: 0.35 },
+            big: { x: 10, y: -150, scale: 0.35 },
             angle: -270,
             flipX: true,
         },
 
         physics: {
             gasPower: 16,
-            brakePower: 22,
+            brakePower: 14,
             gravityDown: 4.4,
-            gravityBack: 2.1,
+            gravityBack: 2,
             acceleration: 16,
             maxSpeed: 650,
         },
@@ -179,29 +143,19 @@ export const BIKERS: Record<BikerKey, BikerConfig> = {
         folder: 'usa',
 
         container: { x: 300, y: 920 },
-
         bike: { x: 110, y: -65, scale: 0.55 },
 
         rider: {
-            normal: {
-                x: 120,
-                y: -125,
-                scale: 0.35,
-                angle: 5
-            },
+            normal: { x: 120, y: -125, scale: 0.35, angle: 5 },
+            hand: { x: 82, y: -130, scale: 0.47, angle: 20 },
+            knee: { x: 120, y: -170, scale: 0.45, angle: 20 },
+            crash: { x: 60, y: -150, scale: 0.42, angle: 100, flipY: true },
 
-            hand: {
-                x: 82,
-                y: -130,
-                scale: 0.47,
-                angle: 20
-            },
-
-            knee: {
-                x: 120,
-                y: -170,
-                scale: 0.45,
-                angle: 20
+            mutant: {
+                normal: { x: 95, y: -130, scale: 0.46, angle: 5 },
+                hand: { x: 75, y: -130, scale: 0.50, angle: 20 },
+                knee: { x: 100, y: -180, scale: 0.50, angle: 12 },
+                crash: { x: 40, y: -120, scale: 0.42, angle: -80, flipX: true },
             },
         },
 
@@ -216,10 +170,10 @@ export const BIKERS: Record<BikerKey, BikerConfig> = {
         },
 
         physics: {
-            gasPower: 19,
-            brakePower: 28,
+            gasPower: 16,
+            brakePower: 10,
             gravityDown: 5.2,
-            gravityBack: 3,
+            gravityBack: 1.3,
             acceleration: 22,
             maxSpeed: 720,
         },
