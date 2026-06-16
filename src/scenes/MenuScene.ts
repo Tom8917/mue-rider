@@ -76,6 +76,13 @@ export class MenuScene extends Phaser.Scene {
             strokeThickness: 6
         }).setOrigin(0.5)
 
+        this.add.text(960, 120, 'Développé par Tom.M', {
+            fontSize: '12px',
+            color: '#ffffff',
+            stroke: '#000000',
+            strokeThickness: 6
+        }).setOrigin(0.5)
+
         this.bestScoreText = this.add.text(960, 165, `Best score : ${best}`, {
             fontSize: '30px',
             color: '#ffdd66',
@@ -232,6 +239,13 @@ export class MenuScene extends Phaser.Scene {
             color: '#ffffff',
             stroke: '#000000',
             strokeThickness: 8
+        }).setOrigin(0.5)
+
+        this.add.text(360, 155, 'Développé par Tom.M', {
+            fontSize: '18px',
+            color: '#ffffff',
+            stroke: '#000000',
+            strokeThickness: 4
         }).setOrigin(0.5)
 
         this.add.text(360, 205, `Best score : ${best}`, {
