@@ -198,36 +198,39 @@ export class GameScene extends Phaser.Scene {
 
     private updateCameraEffects() {
         const camera = this.cameras.main
-
         const mobile = this.isMobileView()
-        let targetZoom = mobile ? 1.45 : 1
 
-        // zone moyenne dangereuse
+        let targetZoom = mobile ? 0.95 : 1
+
         if (this.angle >= 60) {
-            targetZoom = mobile ? 1.50 : 1.02
+            targetZoom = mobile ? 1.00 : 1.02
         }
 
-        // bavette
         if (this.angle >= 84 && this.angle <= 96) {
-            targetZoom = mobile ? 1.58 : 1.05
+            targetZoom = mobile ? 1.05 : 1.05
 
-            // micro shake bavette
             if (Math.random() < 0.08) {
                 camera.shake(60, 0.0015)
             }
         }
 
-        // ultra dangereux proche chute arrière
         if (this.angle >= 105) {
-            targetZoom = mobile ? 1.66 : 1.08
+            targetZoom = mobile ? 1.10 : 1.08
 
             if (Math.random() < 0.18) {
-                camera.shake(80, 0.00)
+                camera.shake(80, 0.0015)
             }
         }
 
-        // transition smooth
         camera.zoom += (targetZoom - camera.zoom) * 0.08
+
+        if (mobile) {
+            const targetScrollX = Phaser.Math.Linear(60, -70, Phaser.Math.Clamp(this.angle / 106, 0, 1))
+            const targetScrollY = Phaser.Math.Linear(110, 40, Phaser.Math.Clamp(this.angle / 106, 0, 1))
+
+            camera.scrollX += (targetScrollX - camera.scrollX) * 0.08
+            camera.scrollY += (targetScrollY - camera.scrollY) * 0.08
+        }
     }
 
     update(_: number, delta: number) {
@@ -304,11 +307,11 @@ export class GameScene extends Phaser.Scene {
         ).setDepth(999)
 
         this.gameOverText = this.add.text(
-            mobile ? 960 : 960,
-            mobile ? 360 : 330,
+            mobile ? 360 : 960,
+            mobile ? 520 : 330,
             '',
             {
-                fontSize: mobile ? '42px' : '52px',
+                fontSize: mobile ? '34px' : '52px',
                 color: '#ff5555',
                 align: 'center',
                 stroke: '#000000',
@@ -316,8 +319,8 @@ export class GameScene extends Phaser.Scene {
             }
         ).setOrigin(0.5).setDepth(60)
 
-        this.mutationText = this.add.text(960, 390, '', {
-            fontSize: mobile ? '64px' : '88px',
+        this.mutationText = this.add.text(mobile ? 360 : 960, mobile ? 430 : 390, '', {
+            fontSize: mobile ? '48px' : '88px',
             color: '#ffdd66',
             fontStyle: 'bold',
             stroke: '#000000',
@@ -690,8 +693,8 @@ Z Gaz | S Frein | A Main | E Genou`
             .setDisplaySize(1920, 1080)
 
         if (mobile) {
-            this.cameras.main.setZoom(1.45)
-            this.cameras.main.setScroll(20, 210)
+            this.cameras.main.setZoom(0.95)
+            this.cameras.main.setScroll(60, 90)
         } else {
             this.cameras.main.setZoom(1)
             this.cameras.main.setScroll(0, 0)
@@ -728,7 +731,7 @@ Z Gaz | S Frein | A Main | E Genou`
 
         this.bike = this.add.container(
             mobile ? 270 : biker.container.x,
-            mobile ? 930 : biker.container.y
+            mobile ? 960 : biker.container.y
         ).setDepth(20)
 
         this.rider = this.add.image(
