@@ -1,7 +1,7 @@
 import Phaser from 'phaser'
-import { GAME_STATE, type BackgroundKey } from '../data/gameState'
-import { BIKERS } from '../data/bikers'
-import type { BikerKey } from '../data/bikers'
+import {GAME_STATE, type BackgroundKey} from '../data/gameState'
+import {BIKERS} from '../data/bikers'
+import type {BikerKey} from '../data/bikers'
 
 export class MenuScene extends Phaser.Scene {
     private bikers: BikerKey[] = ['portugal', 'brazil', 'usa']
@@ -15,6 +15,11 @@ export class MenuScene extends Phaser.Scene {
     private bikerTitle!: Phaser.GameObjects.Text
     private backgroundTitle!: Phaser.GameObjects.Text
     private bestScoreText!: Phaser.GameObjects.Text
+
+    private menuMusic?: Phaser.Sound.BaseSound
+
+    private menuSoundText!: Phaser.GameObjects.Text
+    private gameSoundText!: Phaser.GameObjects.Text
 
     constructor() {
         super('MenuScene')
@@ -34,15 +39,31 @@ export class MenuScene extends Phaser.Scene {
             this.load.image(`${biker.key}_menu_front_wheel`, `${folder}/front_wheel.png`)
             this.load.image(`${biker.key}_menu_rear_wheel`, `${folder}/rear_wheel.png`)
         }
+
+        this.load.audio('menu_music', '/assets/audio/music_2.mp3')
     }
 
     create() {
+// reset musique jeu
+        this.sound.stopByKey('game_music')
+        this.sound.stopByKey('menu_music')
+
+        if (GAME_STATE.menuSoundEnabled) {
+            this.menuMusic = this.sound.add('menu_music', {
+                loop: true,
+                volume: 0.35
+            })
+
+            this.menuMusic.play()
+        }
+
         this.bikerIndex = this.bikers.indexOf(GAME_STATE.biker)
         this.backgroundIndex = this.backgrounds.indexOf(GAME_STATE.background)
 
         const best = Number(localStorage.getItem('mue-rider-best-score') ?? 0)
 
-        this.add.rectangle(960, 540, 1920, 1080, 0x111827)
+        this.add.rectangle(960, 420, 1000, 420)
+            .setStrokeStyle(4, 0xffffff, 0.25)
 
         this.add.text(960, 90, 'MUE RIDER', {
             fontSize: '72px',
@@ -58,10 +79,15 @@ export class MenuScene extends Phaser.Scene {
             strokeThickness: 4
         }).setOrigin(0.5)
 
-        this.backgroundPreview = this.add.image(960, 420, GAME_STATE.background)
+        this.backgroundPreview = this.add.image(
+            960,
+            420,
+            GAME_STATE.background
+        )
             .setOrigin(0.5)
-            .setDisplaySize(1000, 420)
             .setAlpha(0.95)
+
+        this.fitBackgroundPreview(GAME_STATE.background)
 
         this.add.rectangle(960, 420, 1000, 420)
             .setStrokeStyle(4, 0xffffff, 0.25)
@@ -95,6 +121,42 @@ export class MenuScene extends Phaser.Scene {
             }
         ).setOrigin(0.5)
 
+        this.menuSoundText = this.add.text(760, 930, '', {
+            fontSize: '24px',
+            color: '#ffffff',
+            stroke: '#000000',
+            strokeThickness: 4
+        }).setOrigin(0.5)
+
+        this.gameSoundText = this.add.text(1160, 930, '', {
+            fontSize: '24px',
+            color: '#ffffff',
+            stroke: '#000000',
+            strokeThickness: 4
+        }).setOrigin(0.5)
+
+        this.input.keyboard?.on('keydown-M', () => {
+            GAME_STATE.menuSoundEnabled = !GAME_STATE.menuSoundEnabled
+
+            if (GAME_STATE.menuSoundEnabled) {
+                this.sound.stopByKey('menu_music')
+                this.menuMusic = this.sound.add('menu_music', {
+                    loop: true,
+                    volume: 0.35
+                })
+                this.menuMusic.play()
+            } else {
+                this.sound.stopByKey('menu_music')
+            }
+
+            this.refreshMenu()
+        })
+
+        this.input.keyboard?.on('keydown-G', () => {
+            GAME_STATE.gameSoundEnabled = !GAME_STATE.gameSoundEnabled
+            this.refreshMenu()
+        })
+
         this.refreshMenu()
 
         this.input.keyboard?.on('keydown-LEFT', () => {
@@ -120,19 +182,67 @@ export class MenuScene extends Phaser.Scene {
         this.input.keyboard?.once('keydown-SPACE', () => {
             GAME_STATE.biker = this.bikers[this.bikerIndex]
             GAME_STATE.background = this.backgrounds[this.backgroundIndex]
+
+            this.menuMusic?.stop()
+            this.sound.stopByKey('menu_music')
+
             this.scene.start('GameScene')
         })
     }
 
-    private refreshMenu() {
+    private
+
+    fitBackgroundPreview(textureKey
+                             :
+                             string
+    ) {
+        const frameWidth = 1000
+        const frameHeight = 420
+
+        this.backgroundPreview.setTexture(textureKey)
+
+        const texture = this.textures.get(textureKey)
+        const source = texture.getSourceImage() as HTMLImageElement
+
+        const imageWidth = source.width
+        const imageHeight = source.height
+
+        const scale = Math.max(
+            frameWidth / imageWidth,
+            frameHeight / imageHeight
+        )
+
+        this.backgroundPreview
+            .setScale(scale)
+            .setPosition(960, 420)
+
+        this.backgroundPreview.setCrop(
+            (imageWidth - frameWidth / scale) / 2,
+            (imageHeight - frameHeight / scale) / 2,
+            frameWidth / scale,
+            frameHeight / scale
+        )
+    }
+
+    private
+
+    refreshMenu() {
         const bikerKey = this.bikers[this.bikerIndex]
         const backgroundKey = this.backgrounds[this.backgroundIndex]
         const biker = BIKERS[bikerKey]
 
+        this.menuSoundText.setText(
+            `M = Son menu : ${GAME_STATE.menuSoundEnabled ? 'ON' : 'OFF'}`
+        )
+
+        this.gameSoundText.setText(
+            `G = Son jeu : ${GAME_STATE.gameSoundEnabled ? 'ON' : 'OFF'}`
+        )
+
         GAME_STATE.biker = bikerKey
         GAME_STATE.background = backgroundKey
 
-        this.backgroundPreview.setTexture(backgroundKey)
+        this.fitBackgroundPreview(backgroundKey)
 
         this.bikerPreview.setTexture(`${bikerKey}_menu_bike`)
         this.bikerPreview.setPosition(960, 500)
@@ -141,7 +251,7 @@ export class MenuScene extends Phaser.Scene {
         this.bikerTitle.setText(`Personnage : ${biker.label}`)
 
         const bgLabel: Record<BackgroundKey, string> = {
-            suburb: 'Banlieue',
+            suburb: 'Banlieue brésilienne',
             industrial: 'Zone industrielle',
             los_angeles: 'Los Angeles',
             ny: 'New York',

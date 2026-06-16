@@ -11,4 +11,6 @@ export type BackgroundKey =
 export const GAME_STATE = {
     biker: 'portugal' as const,
     background: 'suburb' as BackgroundKey,
+    menuSoundEnabled: true,
+    gameSoundEnabled: true,
 }
