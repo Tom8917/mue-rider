@@ -9,6 +9,9 @@ export type BackgroundKey =
     | 'ny'
     | 'las_vegas'
     | 'miami'
+    | 'plage'
+    | 'autoroute'
+    | 'campagne'
 
 export const GAME_STATE = {
     biker: 'portugal' as BikerKey,

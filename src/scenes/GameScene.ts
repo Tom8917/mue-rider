@@ -118,6 +118,9 @@ export class GameScene extends Phaser.Scene {
         this.load.image('ny', '/assets/backgrounds/ny.png')
         this.load.image('las_vegas', '/assets/backgrounds/las_vegas.png')
         this.load.image('miami', '/assets/backgrounds/miami.png')
+        this.load.image('plage', '/assets/backgrounds/plage.png')
+        this.load.image('autoroute', '/assets/backgrounds/autoroute.png')
+        this.load.image('campagne', '/assets/backgrounds/campagne.png')
 
         for (const biker of Object.values(BIKERS)) {
             const folder = `/assets/bikers/${biker.folder}`
@@ -297,22 +300,22 @@ export class GameScene extends Phaser.Scene {
         let targetZoom = mobile ? 0.95 : 1
 
         if (this.angle >= 60) {
-            targetZoom = mobile ? 1.00 : 1.02
+            targetZoom = mobile ? 1.00 : 1.04
         }
 
-        if (this.angle >= 84 && this.angle <= 96) {
-            targetZoom = mobile ? 1.05 : 1.05
+        if (this.angle >= 84 && this.angle <= 105) {
+            targetZoom = mobile ? 1.05 : 1.08
 
             if (Math.random() < 0.08) {
-                camera.shake(60, 0.0015)
+                camera.shake(60, 0.003)
             }
         }
 
-        if (this.angle >= 105) {
-            targetZoom = mobile ? 1.10 : 1.08
+        if (this.angle >= 106) {
+            targetZoom = mobile ? 1.10 : 1.03
 
             if (Math.random() < 0.18) {
-                camera.shake(80, 0.0015)
+                camera.shake(80, 0.0010)
             }
         }
 
@@ -427,7 +430,7 @@ export class GameScene extends Phaser.Scene {
 
         this.gameOverText = this.add.text(
             mobile ? 360 : 960,
-            mobile ? 520 : 330,
+            mobile ? 520 : 430,
             '',
             {
                 fontSize: mobile ? '34px' : '52px',
@@ -955,6 +958,11 @@ Z Gaz | S Frein | A Main | E Genou | R Radio`
         this.scrapeSound?.stop()
         this.gameMusic?.stop()
 
+        if (this.score > this.bestScore) {
+            this.bestScore = Math.floor(this.score)
+            localStorage.setItem('mue-rider-best-score', String(this.bestScore))
+        }
+
         if (GAME_STATE.gameSoundEnabled) {
             if (reason === 'Chute arrière') {
                 this.sound.play('crash_sound', {
@@ -967,8 +975,14 @@ Z Gaz | S Frein | A Main | E Genou | R Radio`
             }
         }
 
+        const mobile = this.isMobileView()
+
         this.gameOverText.setText(
-            `${reason}
+            mobile
+                ? `${reason}
+
+Score : ${Math.floor(this.score)}`
+                : `${reason}
 
 Score : ${Math.floor(this.score)}
 
