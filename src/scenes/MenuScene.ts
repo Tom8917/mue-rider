@@ -6,7 +6,7 @@ import { RADIOS, type RadioChannel } from '../data/radios'
 
 export class MenuScene extends Phaser.Scene {
     private bikers: BikerKey[] = ['portugal', 'brazil', 'usa']
-    private backgrounds: BackgroundKey[] = ['suburb', 'industrial', 'los_angeles', 'ny', 'las_vegas', 'miami']
+    private backgrounds: BackgroundKey[] = ['suburb', 'industrial', 'los_angeles', 'ny', 'las_vegas', 'miami', 'plage', 'autoroute', 'campagne']
 
     private radios: RadioChannel[] = ['channel_1', 'channel_2', 'channel_3']
     private radioIndex = 0
@@ -52,6 +52,9 @@ export class MenuScene extends Phaser.Scene {
         this.load.image('ny', '/assets/backgrounds/ny.png')
         this.load.image('las_vegas', '/assets/backgrounds/las_vegas.png')
         this.load.image('miami', '/assets/backgrounds/miami.png')
+        this.load.image('plage', '/assets/backgrounds/plage.png')
+        this.load.image('autoroute', '/assets/backgrounds/autoroute.png')
+        this.load.image('campagne', '/assets/backgrounds/campagne.png')
 
         for (const biker of Object.values(BIKERS)) {
             const folder = `/assets/bikers/${biker.folder}`
@@ -462,6 +465,9 @@ export class MenuScene extends Phaser.Scene {
             ny: 'New York',
             las_vegas: 'Las Vegas',
             miami: 'Miami',
+            plage: 'Plage',
+            autoroute: 'autoroute',
+            campagne: 'campagne',
         }
 
         this.backgroundTitle.setText(`Environnement : ${bgLabel[backgroundKey]}`)

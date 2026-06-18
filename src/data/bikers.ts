@@ -78,7 +78,7 @@ export const BIKERS: Record<BikerKey, BikerConfig> = {
         },
 
         rearWheel: { x: 22, y: -16, scale: 0.42 },
-        frontWheel: { x: 200, y: -15, scale: 0.42 },
+        frontWheel: { x: 205, y: -15, scale: 0.42 },
 
         sparks: {
             small: { x: -9, y: -105, scale: 0.30 },
@@ -172,7 +172,7 @@ export const BIKERS: Record<BikerKey, BikerConfig> = {
         },
 
         physics: {
-            gasPower: 16,
+            gasPower: 15,
             brakePower: 10,
             gravityDown: 5.2,
             gravityBack: 1.3,
