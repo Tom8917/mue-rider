@@ -45,6 +45,10 @@ export class MenuScene extends Phaser.Scene {
             }
         ).setOrigin(0.5)
 
+        this.load.once('complete', () => {
+            loadingText.destroy()
+        })
+
         this.load.image('suburb', '/assets/backgrounds/suburb.png')
         this.load.image('highway', '/assets/backgrounds/highway.png')
         this.load.image('industrial', '/assets/backgrounds/industrial.png')
@@ -67,20 +71,112 @@ export class MenuScene extends Phaser.Scene {
         this.load.audio('menu_music', '/assets/audio/menu.mp3')
     }
 
+
+    private isPageActive(): boolean {
+        return document.visibilityState === 'visible' && document.hasFocus()
+    }
+
+    private startMenuMusic() {
+        this.sound.stopByKey('menu_music')
+
+        if (!GAME_STATE.menuSoundEnabled || !this.isPageActive()) {
+            return
+        }
+
+        this.menuMusic = this.sound.add('menu_music', {
+            loop: true,
+            volume: 0.35
+        })
+
+        this.menuMusic.play()
+    }
+
+    private setupPageSoundGuard() {
+        const updateSound = () => {
+            if (!this.isPageActive()) {
+                this.menuMusic?.pause()
+                return
+            }
+
+            if (GAME_STATE.menuSoundEnabled) {
+                if (this.menuMusic && this.menuMusic.isPaused) {
+                    this.menuMusic.resume()
+                } else if (!this.menuMusic?.isPlaying) {
+                    this.startMenuMusic()
+                }
+            }
+        }
+
+        window.addEventListener('blur', updateSound)
+        window.addEventListener('focus', updateSound)
+        document.addEventListener('visibilitychange', updateSound)
+
+        this.events.once('shutdown', () => {
+            window.removeEventListener('blur', updateSound)
+            window.removeEventListener('focus', updateSound)
+            document.removeEventListener('visibilitychange', updateSound)
+        })
+    }
+
+    private async syncLocalBestScore() {
+        const username = localStorage.getItem('mue-rider-username') || 'Joueur'
+        const bestScore = Number(localStorage.getItem('mue-rider-best-score') ?? 0)
+
+        if (bestScore <= 0) {
+            return
+        }
+
+        try {
+            await fetch('http://localhost:3001/scores', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username,
+                    score: bestScore,
+                }),
+            })
+        } catch {
+            console.warn('Impossible de synchroniser le score local')
+        }
+    }
+
+
     create() {
         document.body.classList.remove('game-active')
 
 // reset musique jeu
         this.sound.stopByKey('menu_music')
 
-        if (GAME_STATE.menuSoundEnabled) {
-            this.menuMusic = this.sound.add('menu_music', {
-                loop: true,
-                volume: 0.35
-            })
+        const usernameIcon = this.add.text(1495, 100, '👤', {
+            fontSize: '42px',
+            color: '#ffffff',
+            backgroundColor: 'rgba(0, 0, 0, 0.45)',
+            padding: { x: 14, y: 10 },
+            stroke: '#000000',
+            strokeThickness: 4
+        })
+            .setOrigin(0.5)
+            .setInteractive({ useHandCursor: true })
 
-            this.menuMusic.play()
+        usernameIcon.on('pointerdown', () => {
+            const current = localStorage.getItem('mue-rider-username') || 'Joueur'
+            const username = prompt('Ton pseudo', current)?.trim()
+
+            if (username) {
+                localStorage.setItem('mue-rider-username', username)
+            }
+        })
+
+        if (!localStorage.getItem('mue-rider-username')) {
+            localStorage.setItem('mue-rider-username', 'Joueur')
         }
+
+        this.syncLocalBestScore()
+
+        this.setupPageSoundGuard()
+        this.startMenuMusic()
 
         this.bikerIndex = this.bikers.indexOf(GAME_STATE.biker)
         this.backgroundIndex = this.backgrounds.indexOf(GAME_STATE.background)
@@ -112,6 +208,21 @@ export class MenuScene extends Phaser.Scene {
             stroke: '#000000',
             strokeThickness: 4
         }).setOrigin(0.5)
+
+        const scoreIcon = this.add.text(1430, 100, '🏆', {
+            fontSize: '42px',
+            color: '#ffffff',
+            backgroundColor: 'rgba(0, 0, 0, 0.45)',
+            padding: { x: 14, y: 10 },
+            stroke: '#000000',
+            strokeThickness: 4
+        })
+            .setOrigin(0.5)
+            .setInteractive({ useHandCursor: true })
+
+        scoreIcon.on('pointerdown', () => {
+            this.openScorePopup()
+        })
 
         this.backgroundPreview = this.add.image(
             960,
@@ -271,94 +382,131 @@ export class MenuScene extends Phaser.Scene {
     }
 
     private setupMobileMenu() {
-        this.children.removeAll()
+        this.children.removeAll(true)
 
         const best = Number(localStorage.getItem('mue-rider-best-score') ?? 0)
 
-        this.add.text(360, 120, 'MUE RIDER', {
-            fontSize: '76px',
+        this.add.text(360, 85, 'MUE RIDER', {
+            fontSize: '70px',
             color: '#ffffff',
             stroke: '#000000',
             strokeThickness: 8
         }).setOrigin(0.5)
 
-        this.add.text(360, 155, 'Développé par Tom.M', {
-            fontSize: '18px',
+        this.add.text(360, 125, 'Développé par Tom.M', {
+            fontSize: '17px',
             color: '#ffffff',
             stroke: '#000000',
             strokeThickness: 4
         }).setOrigin(0.5)
 
-        this.add.text(360, 205, `Best score : ${best}`, {
-            fontSize: '34px',
+        this.add.text(360, 170, `Best score : ${best}`, {
+            fontSize: '30px',
             color: '#ffdd66',
             stroke: '#000000',
             strokeThickness: 5
         }).setOrigin(0.5)
 
-        this.backgroundPreview = this.add.image(360, 470, GAME_STATE.background)
+        this.backgroundPreview = this.add.image(360, 430, GAME_STATE.background)
             .setOrigin(0.5)
             .setAlpha(0.95)
 
-        this.bikerPreview = this.add.image(360, 610, `${GAME_STATE.biker}_menu_bike`)
+        this.bikerPreview = this.add.image(360, 575, `${GAME_STATE.biker}_menu_bike`)
             .setOrigin(0.69)
             .setScale(0.9)
 
-        this.bikerTitle = this.add.text(360, 820, '', {
-            fontSize: '34px',
+        this.bikerTitle = this.add.text(360, 785, '', {
+            fontSize: '32px',
             color: '#ffffff',
             align: 'center',
             stroke: '#000000',
             strokeThickness: 5
         }).setOrigin(0.5)
 
-        this.backgroundTitle = this.add.text(360, 885, '', {
-            fontSize: '30px',
+        this.backgroundTitle = this.add.text(360, 840, '', {
+            fontSize: '28px',
             color: '#cccccc',
             align: 'center',
             stroke: '#000000',
             strokeThickness: 5
         }).setOrigin(0.5)
 
-        this.radioTitle = this.add.text(360, 940, '', {
-            fontSize: '28px',
+        this.radioTitle = this.add.text(360, 890, '', {
+            fontSize: '24px',
             color: '#ffdd66',
             align: 'center',
             stroke: '#000000',
             strokeThickness: 5
         }).setOrigin(0.5)
 
-        this.addMobileButton(360, 1030, 'RADIO', () => {
-            this.radioIndex = Phaser.Math.Wrap(this.radioIndex + 1, 0, this.radios.length)
-            this.refreshMenu()
-        }, 260, 55)
-
-        this.menuSoundText = this.add.text(360, 0, '', { fontSize: '1px' })
-        this.gameSoundText = this.add.text(360, 0, '', { fontSize: '1px' })
-
-        // Boutons sur l'aperçu du fond
-        this.addMobileButton(95, 470, '←', () => {
+        this.addMobileButton(95, 430, '←', () => {
             this.backgroundIndex = Phaser.Math.Wrap(this.backgroundIndex - 1, 0, this.backgrounds.length)
             this.refreshMenu()
         }, 70, 90)
 
-        this.addMobileButton(625, 470, '→', () => {
+        this.addMobileButton(625, 430, '→', () => {
             this.backgroundIndex = Phaser.Math.Wrap(this.backgroundIndex + 1, 0, this.backgrounds.length)
             this.refreshMenu()
         }, 70, 90)
 
-// Boutons sur l'aperçu de la moto
-        this.addMobileButton(95, 610, '←', () => {
+        this.addMobileButton(95, 575, '←', () => {
             this.bikerIndex = Phaser.Math.Wrap(this.bikerIndex - 1, 0, this.bikers.length)
             this.refreshMenu()
         }, 70, 90)
 
-        this.addMobileButton(625, 610, '→', () => {
+        this.addMobileButton(625, 575, '→', () => {
             this.bikerIndex = Phaser.Math.Wrap(this.bikerIndex + 1, 0, this.bikers.length)
             this.refreshMenu()
         }, 70, 90)
 
-// Bouton jouer bien séparé
+        this.menuSoundText = this.add.text(360, 0, '', { fontSize: '1px' })
+        this.gameSoundText = this.add.text(360, 0, '', { fontSize: '1px' })
+
+        const actionY = 1015
+        const buttonWidth = 105
+        const buttonHeight = 70
+        const gap = 8
+        const totalWidth = buttonWidth * 5 + gap * 4
+        const startX = 360 - totalWidth / 2 + buttonWidth / 2
+
+        this.addMobileActionButton(startX, actionY, GAME_STATE.menuSoundEnabled ? '🔊' : '🔇', 'Menu', () => {
+            GAME_STATE.menuSoundEnabled = !GAME_STATE.menuSoundEnabled
+
+            if (GAME_STATE.menuSoundEnabled) {
+                this.startMenuMusic()
+            } else {
+                this.sound.stopByKey('menu_music')
+            }
+
+            this.setupMobileMenu()
+            this.refreshMenu()
+        }, buttonWidth, buttonHeight)
+
+        this.addMobileActionButton(startX + (buttonWidth + gap), actionY, GAME_STATE.gameSoundEnabled ? '🎵' : '🚫', 'Jeu', () => {
+            GAME_STATE.gameSoundEnabled = !GAME_STATE.gameSoundEnabled
+            this.setupMobileMenu()
+            this.refreshMenu()
+        }, buttonWidth, buttonHeight)
+
+        this.addMobileActionButton(startX + (buttonWidth + gap) * 2, actionY, '🏆', 'Scores', () => {
+            this.openScorePopup()
+        }, buttonWidth, buttonHeight)
+
+        this.addMobileActionButton(startX + (buttonWidth + gap) * 3, actionY, '👤', 'Pseudo', () => {
+            const current = localStorage.getItem('mue-rider-username') || 'Joueur'
+            const username = prompt('Ton pseudo', current)?.trim()
+
+            if (username) {
+                localStorage.setItem('mue-rider-username', username)
+                this.syncLocalBestScore()
+            }
+        }, buttonWidth, buttonHeight)
+
+        this.addMobileActionButton(startX + (buttonWidth + gap) * 4, actionY, '📻', 'Radio', () => {
+            this.radioIndex = Phaser.Math.Wrap(this.radioIndex + 1, 0, this.radios.length)
+            this.refreshMenu()
+        }, buttonWidth, buttonHeight)
+
         this.addMobileButton(360, 1110, 'JOUER', () => {
             GAME_STATE.biker = this.bikers[this.bikerIndex]
             GAME_STATE.background = this.backgrounds[this.backgroundIndex]
@@ -367,30 +515,63 @@ export class MenuScene extends Phaser.Scene {
             this.sound.stopByKey('menu_music')
 
             this.scene.start('GameScene')
-        }, 360, 75)
+        }, 430, 82)
+    }
 
-// Boutons sons en bas
-        this.addMobileButton(180, 1190, 'SON MENU', () => {
-            GAME_STATE.menuSoundEnabled = !GAME_STATE.menuSoundEnabled
+    private addMobileActionButton(
+        x: number,
+        y: number,
+        icon: string,
+        label: string,
+        callback: () => void,
+        width = 118,
+        height = 70
+    ) {
+        const button = this.add.rectangle(x, y, width, height, 0x000000, 0.52)
+            .setStrokeStyle(3, 0xffffff, 0.75)
+            .setInteractive({ useHandCursor: true })
 
-            if (GAME_STATE.menuSoundEnabled) {
-                this.sound.stopByKey('menu_music')
-                this.menuMusic = this.sound.add('menu_music', {
-                    loop: true,
-                    volume: 0.35
-                })
-                this.menuMusic.play()
-            } else {
-                this.sound.stopByKey('menu_music')
-            }
+        const iconText = this.add.text(x, y - 13, icon, {
+            fontSize: '26px',
+            color: '#ffffff',
+            stroke: '#000000',
+            strokeThickness: 3
+        }).setOrigin(0.5)
 
-            this.refreshMenu()
-        })
+        const labelText = this.add.text(x, y + 18, label, {
+            fontSize: '15px',
+            color: '#ffffff',
+            fontStyle: 'bold',
+            stroke: '#000000',
+            strokeThickness: 3
+        }).setOrigin(0.5)
 
-        this.addMobileButton(540, 1190, 'SON JEU', () => {
-            GAME_STATE.gameSoundEnabled = !GAME_STATE.gameSoundEnabled
-            this.refreshMenu()
-        })
+        button.on('pointerdown', callback)
+        iconText.setInteractive({ useHandCursor: true }).on('pointerdown', callback)
+        labelText.setInteractive({ useHandCursor: true }).on('pointerdown', callback)
+    }
+
+    private addMobileIcon(
+        x: number,
+        y: number,
+        label: string,
+        callback: () => void
+    ) {
+        const size = 60
+
+        const button = this.add.rectangle(x, y, size, size, 0x000000, 0.50)
+            .setStrokeStyle(3, 0xffffff, 0.75)
+            .setInteractive({ useHandCursor: true })
+
+        const text = this.add.text(x, y, label, {
+            fontSize: '32px',
+            color: '#ffffff',
+            stroke: '#000000',
+            strokeThickness: 4
+        }).setOrigin(0.5)
+
+        button.on('pointerdown', callback)
+        text.setInteractive({ useHandCursor: true }).on('pointerdown', callback)
     }
 
     private fitBackgroundPreview(textureKey: string) {
@@ -422,6 +603,94 @@ export class MenuScene extends Phaser.Scene {
             frameWidth / scale,
             frameHeight / scale
         )
+    }
+
+    private async openScorePopup() {
+        const mobile = this.scale.gameSize.height > this.scale.gameSize.width
+
+        let scores: { username: string; best_score: number }[] = []
+
+        try {
+            scores = await fetch('http://localhost:3001/scores')
+                .then(res => res.json())
+        } catch {
+            scores = []
+        }
+
+        const popupItems: Phaser.GameObjects.GameObject[] = []
+
+        const centerX = mobile ? 360 : 960
+        const centerY = mobile ? 640 : 540
+
+        const width = mobile ? 620 : 760
+        const height = mobile ? 620 : 560
+
+        const overlay = this.add.rectangle(centerX, centerY, width, height, 0x000000, 0.9)
+            .setDepth(1000)
+            .setStrokeStyle(4, 0xffffff, 0.35)
+
+        const title = this.add.text(centerX, centerY - height / 2 + 70, '🏆 TOP 5', {
+            fontSize: mobile ? '44px' : '42px',
+            color: '#ffffff',
+            fontStyle: 'bold',
+            stroke: '#000000',
+            strokeThickness: 5
+        })
+            .setOrigin(0.5)
+            .setDepth(1001)
+
+        popupItems.push(overlay, title)
+
+        const medals = ['🥇', '🥈', '🥉', '4.', '5.']
+
+        if (scores.length === 0) {
+            const empty = this.add.text(centerX, centerY, 'Aucun score', {
+                fontSize: mobile ? '30px' : '30px',
+                color: '#cccccc',
+                stroke: '#000000',
+                strokeThickness: 4
+            })
+                .setOrigin(0.5)
+                .setDepth(1001)
+
+            popupItems.push(empty)
+        }
+
+        scores.forEach((item, index) => {
+            const line = this.add.text(
+                centerX,
+                centerY - 140 + index * (mobile ? 68 : 62),
+                `${medals[index]} ${item.username} — ${item.best_score}`,
+                {
+                    fontSize: mobile ? '30px' : '32px',
+                    color: '#ffffff',
+                    stroke: '#000000',
+                    strokeThickness: 4
+                }
+            )
+                .setOrigin(0.5)
+                .setDepth(1001)
+
+            popupItems.push(line)
+        })
+
+        const close = this.add.text(centerX, centerY + height / 2 - 65, '✕', {
+            fontSize: mobile ? '38px' : '34px',
+            color: '#ffffff',
+            backgroundColor: '#8b0000',
+            padding: { x: 22, y: 8 },
+            stroke: '#000000',
+            strokeThickness: 3
+        })
+            .setOrigin(0.5)
+            .setInteractive({ useHandCursor: true })
+            .setDepth(1001)
+
+        popupItems.push(close)
+
+        close.on('pointerdown', () => {
+            popupItems.forEach(item => item.destroy())
+        })
     }
 
     private refreshMenu() {
