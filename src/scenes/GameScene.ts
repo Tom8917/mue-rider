@@ -315,7 +315,7 @@ export class GameScene extends Phaser.Scene {
             targetZoom = mobile ? 1.10 : 1.03
 
             if (Math.random() < 0.18) {
-                camera.shake(80, 0.0010)
+                camera.shake(80, 0.001)
             }
         }
 
@@ -741,6 +741,25 @@ export class GameScene extends Phaser.Scene {
         })
     }
 
+    private async saveOnlineScore(score: number) {
+        const username = localStorage.getItem('mue-rider-username') || 'Joueur'
+
+        try {
+            await fetch('http://localhost:3001/scores', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username,
+                    score: Math.floor(score),
+                }),
+            })
+        } catch {
+            console.warn('Impossible de sauvegarder le score en ligne')
+        }
+    }
+
     private updateHud() {
         const nextMutationScore =
             this.mutationLevel >= this.maxMutationLevel
@@ -961,6 +980,7 @@ Z Gaz | S Frein | A Main | E Genou | R Radio`
         if (this.score > this.bestScore) {
             this.bestScore = Math.floor(this.score)
             localStorage.setItem('mue-rider-best-score', String(this.bestScore))
+            this.saveOnlineScore(this.bestScore)
         }
 
         if (GAME_STATE.gameSoundEnabled) {
