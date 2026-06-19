@@ -149,25 +149,25 @@ export class MenuScene extends Phaser.Scene {
 // reset musique jeu
         this.sound.stopByKey('menu_music')
 
-        const usernameIcon = this.add.text(1495, 100, '👤', {
-            fontSize: '42px',
-            color: '#ffffff',
-            backgroundColor: 'rgba(0, 0, 0, 0.45)',
-            padding: { x: 14, y: 10 },
-            stroke: '#000000',
-            strokeThickness: 4
-        })
-            .setOrigin(0.5)
-            .setInteractive({ useHandCursor: true })
-
-        usernameIcon.on('pointerdown', () => {
-            const current = localStorage.getItem('mue-rider-username') || 'Joueur'
-            const username = prompt('Ton pseudo', current)?.trim()
-
-            if (username) {
-                localStorage.setItem('mue-rider-username', username)
-            }
-        })
+        // const usernameIcon = this.add.text(1495, 100, '👤', {
+        //     fontSize: '42px',
+        //     color: '#ffffff',
+        //     backgroundColor: 'rgba(0, 0, 0, 0.45)',
+        //     padding: { x: 14, y: 10 },
+        //     stroke: '#000000',
+        //     strokeThickness: 4
+        // })
+        //     .setOrigin(0.5)
+        //     .setInteractive({ useHandCursor: true })
+        //
+        // usernameIcon.on('pointerdown', () => {
+        //     const current = localStorage.getItem('mue-rider-username') || 'Joueur'
+        //     const username = prompt('Ton pseudo', current)?.trim()
+        //
+        //     if (username) {
+        //         localStorage.setItem('mue-rider-username', username)
+        //     }
+        // })
 
         if (!localStorage.getItem('mue-rider-username')) {
             localStorage.setItem('mue-rider-username', 'Joueur')
@@ -209,20 +209,20 @@ export class MenuScene extends Phaser.Scene {
             strokeThickness: 4
         }).setOrigin(0.5)
 
-        const scoreIcon = this.add.text(1430, 100, '🏆', {
-            fontSize: '42px',
-            color: '#ffffff',
-            backgroundColor: 'rgba(0, 0, 0, 0.45)',
-            padding: { x: 14, y: 10 },
-            stroke: '#000000',
-            strokeThickness: 4
-        })
-            .setOrigin(0.5)
-            .setInteractive({ useHandCursor: true })
-
-        scoreIcon.on('pointerdown', () => {
-            this.openScorePopup()
-        })
+        // const scoreIcon = this.add.text(1430, 100, '🏆', {
+        //     fontSize: '42px',
+        //     color: '#ffffff',
+        //     backgroundColor: 'rgba(0, 0, 0, 0.45)',
+        //     padding: { x: 14, y: 10 },
+        //     stroke: '#000000',
+        //     strokeThickness: 4
+        // })
+        //     .setOrigin(0.5)
+        //     .setInteractive({ useHandCursor: true })
+        //
+        // scoreIcon.on('pointerdown', () => {
+        //     this.openScorePopup()
+        // })
 
         this.backgroundPreview = this.add.image(
             960,
@@ -466,7 +466,7 @@ export class MenuScene extends Phaser.Scene {
         const buttonWidth = 105
         const buttonHeight = 70
         const gap = 8
-        const totalWidth = buttonWidth * 5 + gap * 4
+        const totalWidth = buttonWidth * 3 + gap * 2
         const startX = 360 - totalWidth / 2 + buttonWidth / 2
 
         this.addMobileActionButton(startX, actionY, GAME_STATE.menuSoundEnabled ? '🔊' : '🔇', 'Menu', () => {
@@ -488,21 +488,21 @@ export class MenuScene extends Phaser.Scene {
             this.refreshMenu()
         }, buttonWidth, buttonHeight)
 
-        this.addMobileActionButton(startX + (buttonWidth + gap) * 2, actionY, '🏆', 'Scores', () => {
-            this.openScorePopup()
-        }, buttonWidth, buttonHeight)
+        // this.addMobileActionButton(startX + (buttonWidth + gap) * 2, actionY, '🏆', 'Scores', () => {
+        //     this.openScorePopup()
+        // }, buttonWidth, buttonHeight)
+        //
+        // this.addMobileActionButton(startX + (buttonWidth + gap) * 3, actionY, '👤', 'Pseudo', () => {
+        //     const current = localStorage.getItem('mue-rider-username') || 'Joueur'
+        //     const username = prompt('Ton pseudo', current)?.trim()
+        //
+        //     if (username) {
+        //         localStorage.setItem('mue-rider-username', username)
+        //         this.syncLocalBestScore()
+        //     }
+        // }, buttonWidth, buttonHeight)
 
-        this.addMobileActionButton(startX + (buttonWidth + gap) * 3, actionY, '👤', 'Pseudo', () => {
-            const current = localStorage.getItem('mue-rider-username') || 'Joueur'
-            const username = prompt('Ton pseudo', current)?.trim()
-
-            if (username) {
-                localStorage.setItem('mue-rider-username', username)
-                this.syncLocalBestScore()
-            }
-        }, buttonWidth, buttonHeight)
-
-        this.addMobileActionButton(startX + (buttonWidth + gap) * 4, actionY, '📻', 'Radio', () => {
+        this.addMobileActionButton(startX + (buttonWidth + gap) * 2, actionY, '📻', 'Radio', () => {
             this.radioIndex = Phaser.Math.Wrap(this.radioIndex + 1, 0, this.radios.length)
             this.refreshMenu()
         }, buttonWidth, buttonHeight)
